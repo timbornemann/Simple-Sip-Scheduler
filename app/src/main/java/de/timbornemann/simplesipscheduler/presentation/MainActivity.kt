@@ -1,72 +1,50 @@
-/* While this template provides a good starting point for using Wear Compose, you can always
- * take a look at https://github.com/android/wear-os-samples/tree/main/ComposeStarter to find the
- * most up to date changes to the libraries and their usages.
- */
-
 package de.timbornemann.simplesipscheduler.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.Text
-import androidx.wear.compose.material.TimeText
-import androidx.wear.tooling.preview.devices.WearDevices
-import de.timbornemann.simplesipscheduler.R
-import de.timbornemann.simplesipscheduler.presentation.theme.SimpleSipSchedulerTheme
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import de.timbornemann.simplesipscheduler.SimpleSipApplication
+import de.timbornemann.simplesipscheduler.presentation.overview.OverviewScreen
+import de.timbornemann.simplesipscheduler.presentation.quickdrink.QuickDrinkScreen
+import de.timbornemann.simplesipscheduler.presentation.settings.SettingsScreen
+import de.timbornemann.simplesipscheduler.presentation.stats.StatsScreen
+import de.timbornemann.simplesipscheduler.presentation.theme.SimpleSipTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-
         super.onCreate(savedInstanceState)
-
-        setTheme(android.R.style.Theme_DeviceDefault)
-
         setContent {
-            WearApp("Android")
+            val app = application as SimpleSipApplication
+            val viewModel: MainViewModel = viewModel(
+                factory = MainViewModelFactory(app, app.drinkRepository, app.settingsRepository)
+            )
+            
+            WearApp(viewModel)
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun WearApp(greetingName: String) {
-    SimpleSipSchedulerTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colors.background),
-            contentAlignment = Alignment.Center
-        ) {
-            TimeText()
-            Greeting(greetingName = greetingName)
+fun WearApp(viewModel: MainViewModel) {
+    SimpleSipTheme {
+        val pagerState = rememberPagerState(pageCount = { 4 })
+
+        HorizontalPager(state = pagerState) { page ->
+            when (page) {
+                0 -> OverviewScreen(viewModel)
+                1 -> QuickDrinkScreen(viewModel)
+                2 -> StatsScreen(viewModel)
+                3 -> SettingsScreen(viewModel)
+            }
         }
     }
-}
-
-@Composable
-fun Greeting(greetingName: String) {
-    Text(
-        modifier = Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        text = stringResource(R.string.hello_world, greetingName)
-    )
-}
-
-@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
-@Composable
-fun DefaultPreview() {
-    WearApp("Preview Android")
 }
