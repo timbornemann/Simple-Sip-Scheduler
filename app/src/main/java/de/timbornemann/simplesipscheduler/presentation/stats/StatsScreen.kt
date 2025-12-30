@@ -43,28 +43,70 @@ fun StatsScreen(
 
     if (entryToEdit != null) {
         val entry = entryToEdit!!
+        var currentAmount by remember(entry.id) { mutableStateOf(entry.amountMl) }
+        
         androidx.wear.compose.material.dialog.Alert(
             title = { Text("Menge ändern") },
             positiveButton = { 
-                Button(onClick = { entryToEdit = null }, colors = ButtonDefaults.primaryButtonColors()) { Text("OK") } 
+                Button(
+                    onClick = { 
+                        viewModel.updateEntry(entry, currentAmount)
+                        entryToEdit = null 
+                    }, 
+                    colors = ButtonDefaults.primaryButtonColors()
+                ) { 
+                    Text("OK") 
+                } 
             },
             negativeButton = {
-                Button(onClick = { entryToEdit = null }, colors = ButtonDefaults.secondaryButtonColors()) { Text("Abbr") }
+                Button(
+                    onClick = { 
+                        currentAmount = entry.amountMl // Reset to original
+                        entryToEdit = null 
+                    }, 
+                    colors = ButtonDefaults.secondaryButtonColors()
+                ) { 
+                    Text("Abbr") 
+                }
             }
         ) {
-             Column(
+            Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
-             ) {
-                Stepper(
-                    value = entry.amountMl.toFloat(),
-                    onValueChange = { viewModel.updateEntry(entry, it.toInt()) },
-                    valueRange = 0f..2000f,
-                    steps = 19,
-                    increaseIcon = { Icon(imageVector = Icons.Default.Add, contentDescription = "Increase") },
-                    decreaseIcon = { Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease") }
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                   Text(text = "${entry.amountMl} ml", style = MaterialTheme.typography.body1)
+                    // Minus Button (links)
+                    Button(
+                        onClick = { 
+                            currentAmount = (currentAmount - 50).coerceAtLeast(0)
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease")
+                    }
+                    
+                    // Menge in der Mitte
+                    Text(
+                        text = "$currentAmount ml",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    
+                    // Plus Button (rechts)
+                    Button(
+                        onClick = { 
+                            currentAmount = (currentAmount + 50).coerceAtMost(2000)
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Increase")
+                    }
                 }
             }
         }
@@ -128,8 +170,9 @@ fun StatsScreen(
                 } else {
                     items(todayEntries) { entry ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().height(40.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             val time = Instant.ofEpochMilli(entry.timestamp)
                                 .atZone(ZoneId.systemDefault())
@@ -137,31 +180,31 @@ fun StatsScreen(
                             
                             Text(
                                 text = "$time - ${entry.amountMl}ml",
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.body2
+                                modifier = Modifier.weight(1f).padding(start = 8.dp),
+                                style = MaterialTheme.typography.body1
                             )
                             
                             Button(
                                 onClick = { entryToEdit = entry },
                                 colors = ButtonDefaults.secondaryButtonColors(),
-                                modifier = Modifier.size(32.dp).padding(end = 4.dp)
+                                modifier = Modifier.size(40.dp).padding(end = 4.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
                                     contentDescription = "Bearbeiten",
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
 
                             Button(
                                 onClick = { viewModel.deleteEntry(entry) },
                                 colors = ButtonDefaults.secondaryButtonColors(),
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(40.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Löschen",
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
