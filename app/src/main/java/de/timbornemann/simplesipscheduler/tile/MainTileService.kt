@@ -96,34 +96,91 @@ private fun tileLayout(
         .setOnClick(launchIntent)
         .build()
 
+    // Calculate progress percentage for visual indicator
+    val progressPercent = if (target > 0) {
+        ((progress.toFloat() / target.toFloat()) * 100f).toInt().coerceIn(0, 100)
+    } else {
+        0
+    }
+    
+    // Water-themed colors
+    val waterBlue = 0xFF29B6F6.toInt()
+    val waterCyan = 0xFF03DAC5.toInt()
+    val waterLightBlue = 0xFF00BCD4.toInt()
+    val white = 0xFFFFFFFF.toInt()
+    val darkGray = 0xFF1A1A1A.toInt()
+    
     return PrimaryLayout.Builder(requestParams.deviceConfiguration)
         .setResponsiveContentInsetEnabled(true)
         .setContent(
             LayoutElementBuilders.Column.Builder()
                 .addContent(
+                    // Title
                     Text.Builder(context, "Heute")
                         .setTypography(Typography.TYPOGRAPHY_CAPTION1)
-                        .setColor(argb(0xFF29B6F6.toInt())) // WaterBlue manually
+                        .setColor(argb(waterBlue))
                         .build()
                 )
                 .addContent(
-                    Text.Builder(context, "$progress / $target ml")
-                        .setTypography(Typography.TYPOGRAPHY_DISPLAY1)
-                        .setColor(argb(0xFFFFFFFF.toInt())) // White
+                    // Large progress number
+                    LayoutElementBuilders.Row.Builder()
+                        .addContent(
+                            Text.Builder(context, "$progress")
+                                .setTypography(Typography.TYPOGRAPHY_DISPLAY2)
+                                .setColor(argb(waterCyan))
+                                .build()
+                        )
+                        .addContent(
+                            Text.Builder(context, " / $target")
+                                .setTypography(Typography.TYPOGRAPHY_DISPLAY3)
+                                .setColor(argb(white))
+                                .build()
+                        )
+                        .addContent(
+                            Text.Builder(context, " ml")
+                                .setTypography(Typography.TYPOGRAPHY_BODY1)
+                                .setColor(argb(white))
+                                .build()
+                        )
+                        .build()
+                )
+                .addContent(
+                    // Progress percentage indicator
+                    Text.Builder(context, "$progressPercent%")
+                        .setTypography(Typography.TYPOGRAPHY_CAPTION2)
+                        .setColor(argb(waterLightBlue))
                         .build()
                 )
                 .addContent(
                     Chip.Builder(context, clickable, requestParams.deviceConfiguration)
                         .setPrimaryLabelContent("Öffnen")
-                        .setChipColors(ChipColors.primaryChipColors(Colors(0xFF29B6F6.toInt(), 0xFF000000.toInt(), 0xFF000000.toInt(), 0xFF000000.toInt())))
+                        .setChipColors(
+                            ChipColors.primaryChipColors(
+                                Colors(
+                                    waterBlue,
+                                    white,
+                                    darkGray,
+                                    darkGray
+                                )
+                            )
+                        )
                         .build()
                 )
                 .build()
         )
         .setPrimaryChipContent(
-             Chip.Builder(context, clickable, requestParams.deviceConfiguration)
+            Chip.Builder(context, clickable, requestParams.deviceConfiguration)
                 .setPrimaryLabelContent("Trinken (+)")
-                .setChipColors(ChipColors.secondaryChipColors(Colors(0xFF03DAC5.toInt(), 0xFF000000.toInt(), 0xFF000000.toInt(), 0xFF000000.toInt())))
+                .setChipColors(
+                    ChipColors.secondaryChipColors(
+                        Colors(
+                            waterCyan,
+                            white,
+                            darkGray,
+                            darkGray
+                        )
+                    )
+                )
                 .build()
         )
         .build()
