@@ -103,12 +103,19 @@ class MainViewModel(
 
     fun toggleReminder(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepository.setReminderEnabled(enabled)
-            if (enabled) {
-                val interval = reminderInterval.value.toLong() * 60 * 1000L
-                ReminderManager.scheduleReminder(application, interval)
-            } else {
-                ReminderManager.cancelReminder(application)
+            try {
+                settingsRepository.setReminderEnabled(enabled)
+                if (enabled) {
+                    // Get the interval from the repository to ensure we have the latest value
+                    val intervalMinutes = settingsRepository.reminderInterval.first()
+                    val interval = intervalMinutes.toLong() * 60 * 1000L
+                    ReminderManager.scheduleReminder(application, interval)
+                } else {
+                    ReminderManager.cancelReminder(application)
+                }
+            } catch (e: Exception) {
+                // If scheduling fails, disable the reminder setting
+                settingsRepository.setReminderEnabled(false)
             }
         }
     }

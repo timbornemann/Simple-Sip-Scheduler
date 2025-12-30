@@ -45,7 +45,7 @@ fun SettingsScreen(
     val quietHoursStart by viewModel.quietHoursStart.collectAsState()
     val quietHoursEnd by viewModel.quietHoursEnd.collectAsState()
     val buttonConfig by viewModel.buttonConfig.collectAsState()
-
+    
     ScalingLazyColumn(
         modifier = modifier.fillMaxSize(),
         anchorType = ScalingLazyListAnchorType.ItemStart
@@ -150,23 +150,72 @@ fun SettingsScreen(
         item {
             Text("Buttons", style = MaterialTheme.typography.caption1, color = MaterialTheme.colors.secondary, modifier = Modifier.padding(top = 8.dp))
         }
+        
         items(buttonConfig) { amount ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("$amount ml")
-                Button(
-                    onClick = { 
-                        val newConfig = buttonConfig.toMutableList()
-                        newConfig.remove(amount)
-                        viewModel.updateButtonConfig(newConfig)
-                    },
-                    colors = ButtonDefaults.secondaryButtonColors(),
-                    modifier = Modifier.size(32.dp)
+            val index = buttonConfig.indexOf(amount)
+            if (index >= 0) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                 ) {
-                    Icon(imageVector = Icons.Default.Remove, contentDescription = "Remove")
+                    // Minus Button (links)
+                    Button(
+                        onClick = { 
+                            val newConfig = buttonConfig.toMutableList()
+                            val currentIndex = buttonConfig.indexOf(amount)
+                            if (currentIndex >= 0 && currentIndex < newConfig.size) {
+                                val newAmount = (newConfig[currentIndex] - 50).coerceAtLeast(50)
+                                newConfig[currentIndex] = newAmount
+                                viewModel.updateButtonConfig(newConfig)
+                            }
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease")
+                    }
+                    
+                    // Zahl in der Mitte
+                    Text(
+                        text = "$amount ml",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    
+                    // Plus Button (rechts, aber vor dem Löschen-Button)
+                    Button(
+                        onClick = { 
+                            val newConfig = buttonConfig.toMutableList()
+                            val currentIndex = buttonConfig.indexOf(amount)
+                            if (currentIndex >= 0 && currentIndex < newConfig.size) {
+                                val newAmount = (newConfig[currentIndex] + 50).coerceAtMost(1000)
+                                newConfig[currentIndex] = newAmount
+                                viewModel.updateButtonConfig(newConfig)
+                            }
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Increase")
+                    }
+                    
+                    // Löschen Button (ganz rechts)
+                    Button(
+                        onClick = { 
+                            val newConfig = buttonConfig.toMutableList()
+                            val removeIndex = buttonConfig.indexOf(amount)
+                            if (removeIndex >= 0 && removeIndex < newConfig.size) {
+                                newConfig.removeAt(removeIndex)
+                                viewModel.updateButtonConfig(newConfig)
+                            }
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Remove")
+                    }
                 }
             }
         }
