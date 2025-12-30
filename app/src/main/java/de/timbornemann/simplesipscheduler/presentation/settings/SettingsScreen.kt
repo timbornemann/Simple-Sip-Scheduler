@@ -74,15 +74,43 @@ fun SettingsScreen(
             )
         }
         item {
-            Stepper(
-                value = target.toFloat(),
-                onValueChange = { viewModel.updateDailyTarget(it.toInt()) },
-                valueRange = 500f..5000f,
-                steps = 18, 
-                increaseIcon = { Icon(imageVector = Icons.Default.Add, contentDescription = "Increase") },
-                decreaseIcon = { Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease") }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-               Text(text = "$target ml", style = MaterialTheme.typography.body1, color = MaterialTheme.colors.primary)
+                // Minus Button (links)
+                Button(
+                    onClick = { 
+                        val newTarget = (target - 100).coerceAtLeast(500)
+                        viewModel.updateDailyTarget(newTarget)
+                    },
+                    colors = ButtonDefaults.secondaryButtonColors(),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease")
+                }
+                
+                // Tagesziel in der Mitte
+                Text(
+                    text = "$target ml",
+                    style = MaterialTheme.typography.body1,
+                    color = MaterialTheme.colors.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                
+                // Plus Button (rechts)
+                Button(
+                    onClick = { 
+                        val newTarget = (target + 100).coerceAtMost(5000)
+                        viewModel.updateDailyTarget(newTarget)
+                    },
+                    colors = ButtonDefaults.secondaryButtonColors(),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Increase")
+                }
             }
         }
         
@@ -105,47 +133,150 @@ fun SettingsScreen(
             )
         }
         if (reminderEnabled) {
+            // Intervall Einstellung
             item {
-                Text("Intervall: $reminderInterval min", style = MaterialTheme.typography.caption2)
+                Text("Intervall", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
             }
             item {
-                 Stepper(
-                    value = reminderInterval.toFloat(),
-                    onValueChange = { viewModel.setReminderInterval(it.toInt()) },
-                    valueRange = 30f..240f,
-                    steps = 6, // 30, 60, 90, 120... 
-                    increaseIcon = { Icon(imageVector = Icons.Default.Add, contentDescription = "Increase") },
-                    decreaseIcon = { Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease") }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                   Text(text = "${reminderInterval}m", style = MaterialTheme.typography.body1)
+                    // Minus Button (links)
+                    Button(
+                        onClick = { 
+                            val newInterval = (reminderInterval - 30).coerceAtLeast(30)
+                            viewModel.setReminderInterval(newInterval)
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease")
+                    }
+                    
+                    // Intervall in der Mitte
+                    Text(
+                        text = "$reminderInterval min",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    
+                    // Plus Button (rechts)
+                    Button(
+                        onClick = { 
+                            val newInterval = (reminderInterval + 30).coerceAtMost(240)
+                            viewModel.setReminderInterval(newInterval)
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Increase")
+                    }
                 }
             }
+            
+            // Ruhezeit Einstellung
             item {
-                Text("Ruhezeit: $quietHoursStart - $quietHoursEnd Uhr", style = MaterialTheme.typography.caption2)
+                Text("Ruhezeit", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
             }
             item {
-                // Simplified Quiet Hours: Start Time
-                Stepper(
-                    value = quietHoursStart.toFloat(),
-                    onValueChange = { viewModel.setQuietHours(it.toInt(), quietHoursEnd) },
-                    valueRange = 0f..23f,
-                    steps = 22,
-                    increaseIcon = { Icon(imageVector = Icons.Default.Add, contentDescription = "Increase") },
-                    decreaseIcon = { Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease") }
+                Text(
+                    text = "$quietHoursStart - $quietHoursEnd Uhr",
+                    style = MaterialTheme.typography.caption2,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            
+            // Start Zeit
+            item {
+                Text("Start", style = MaterialTheme.typography.caption2)
+            }
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                   Text(text = "Start: $quietHoursStart", style = MaterialTheme.typography.body1)
+                    // Minus Button (links)
+                    Button(
+                        onClick = { 
+                            val newStart = (quietHoursStart - 1).let { if (it < 0) 23 else it }
+                            viewModel.setQuietHours(newStart, quietHoursEnd)
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease")
+                    }
+                    
+                    // Start Zeit in der Mitte
+                    Text(
+                        text = "${quietHoursStart} Uhr",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    
+                    // Plus Button (rechts)
+                    Button(
+                        onClick = { 
+                            val newStart = (quietHoursStart + 1) % 24
+                            viewModel.setQuietHours(newStart, quietHoursEnd)
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Increase")
+                    }
                 }
             }
+            
+            // Ende Zeit
             item {
-                 Stepper(
-                    value = quietHoursEnd.toFloat(),
-                    onValueChange = { viewModel.setQuietHours(quietHoursStart, it.toInt()) },
-                    valueRange = 0f..23f,
-                    steps = 22,
-                    increaseIcon = { Icon(imageVector = Icons.Default.Add, contentDescription = "Increase") },
-                    decreaseIcon = { Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease") }
+                Text("Ende", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
+            }
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                   Text(text = "Ende: $quietHoursEnd", style = MaterialTheme.typography.body1)
+                    // Minus Button (links)
+                    Button(
+                        onClick = { 
+                            val newEnd = (quietHoursEnd - 1).let { if (it < 0) 23 else it }
+                            viewModel.setQuietHours(quietHoursStart, newEnd)
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease")
+                    }
+                    
+                    // Ende Zeit in der Mitte
+                    Text(
+                        text = "${quietHoursEnd} Uhr",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    
+                    // Plus Button (rechts)
+                    Button(
+                        onClick = { 
+                            val newEnd = (quietHoursEnd + 1) % 24
+                            viewModel.setQuietHours(quietHoursStart, newEnd)
+                        },
+                        colors = ButtonDefaults.secondaryButtonColors(),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Increase")
+                    }
                 }
             }
         }
