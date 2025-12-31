@@ -1,9 +1,9 @@
 package de.timbornemann.simplesipscheduler.tile
 
 import android.content.Context
-import android.content.Intent as AndroidIntent
 import androidx.wear.protolayout.ColorBuilders.argb
 import androidx.wear.protolayout.ActionBuilders
+import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
@@ -11,9 +11,9 @@ import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.material.Colors
 import androidx.wear.protolayout.material.Text
 import androidx.wear.protolayout.material.Typography
-import androidx.wear.protolayout.material.layouts.PrimaryLayout
 import androidx.wear.protolayout.material.Chip
 import androidx.wear.protolayout.material.ChipColors
+import androidx.wear.protolayout.material.CompactChip
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.tooling.preview.Preview
@@ -23,10 +23,10 @@ import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.tiles.SuspendingTileService
 import de.timbornemann.simplesipscheduler.SimpleSipApplication
 import de.timbornemann.simplesipscheduler.presentation.MainActivity
-import de.timbornemann.simplesipscheduler.receiver.ReminderReceiver
 import kotlinx.coroutines.flow.first
 
-private const val RESOURCES_VERSION = "0"
+private const val RESOURCES_VERSION = "1"
+private const val ID_ADD_100 = "add_100"
 
 @OptIn(ExperimentalHorologistApi::class)
 class MainTileService : SuspendingTileService() {
@@ -39,6 +39,12 @@ class MainTileService : SuspendingTileService() {
         requestParams: RequestBuilders.TileRequest
     ): TileBuilders.Tile {
         val app = applicationContext as SimpleSipApplication
+        
+        // Handle Quick Drink Click
+        if (requestParams.state?.lastClickableId == ID_ADD_100) {
+            app.drinkRepository.addDrink(100)
+        }
+
         val progress = app.drinkRepository.getTodayProgress().first() ?: 0
         val target = app.settingsRepository.dailyTarget.first()
         
@@ -84,6 +90,7 @@ private fun tileLayout(
     progress: Int,
     target: Int
 ): LayoutElementBuilders.LayoutElement {
+    // Launch app intent
     val launchIntent = ActionBuilders.LaunchAction.Builder()
         .setAndroidActivity(
             ActionBuilders.AndroidActivity.Builder()
@@ -92,96 +99,150 @@ private fun tileLayout(
                 .build()
         )
         .build()
-        
-    val clickable = ModifiersBuilders.Clickable.Builder()
-        .setOnClick(launchIntent)
+    
+    // Quick drink action (100ml) - LoadAction
+    val quickDrinkClickable = ModifiersBuilders.Clickable.Builder()
+        .setId(ID_ADD_100)
+        .setOnClick(ActionBuilders.LoadAction.Builder().build())
         .build()
 
-    // Calculate progress percentage for visual indicator
-    val progressPercent = if (target > 0) {
-        ((progress.toFloat() / target.toFloat()) * 100f).toInt().coerceIn(0, 100)
-    } else {
-        0
-    }
-    
-    // Water-themed colors
+    // Colors
     val waterBlue = 0xFF29B6F6.toInt()
-    val waterCyan = 0xFF03DAC5.toInt()
-    val waterLightBlue = 0xFF00BCD4.toInt()
+    val waterBlueWithAlpha = 0xCC29B6F6.toInt() // 0.8 alpha
     val white = 0xFFFFFFFF.toInt()
-    val darkGray = 0xFF1A1A1A.toInt()
-    
-    return PrimaryLayout.Builder(requestParams.deviceConfiguration)
-        .setResponsiveContentInsetEnabled(true)
-        .setContent(
-            LayoutElementBuilders.Column.Builder()
-                .addContent(
-                    // Title
-                    Text.Builder(context, "Heute")
-                        .setTypography(Typography.TYPOGRAPHY_CAPTION1)
-                        .setColor(argb(waterBlue))
+    val textGray = 0xB3FFFFFF.toInt() // 0.7 alpha
+    val centerBoxBackground = 0xCC1A1A1A.toInt() // 0.8 alpha
+    val backgroundRingColor = 0xFF1A1A1A.toInt()
+    val buttonColor = 0xFF1A1A1A.toInt() // Dark background for chip
+
+    // Progress calculations
+    val progressFraction = if (target > 0) {
+        (progress.toFloat() / target.toFloat()).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    // GAP AT TOP to match Overview Screen
+    val startAngle = 20f
+    val sweepAngle = 320f
+    val arcLength = (progressFraction * sweepAngle).coerceIn(0f, sweepAngle)
+
+    // 1. Background Arc (Ring)
+    val backgroundArc = LayoutElementBuilders.Arc.Builder()
+        .setAnchorAngle(
+            DimensionBuilders.DegreesProp.Builder().setValue(startAngle).build()
+        )
+        .setAnchorType(LayoutElementBuilders.ARC_ANCHOR_START)
+        .addContent(
+            LayoutElementBuilders.ArcLine.Builder()
+                .setLength(DimensionBuilders.DegreesProp.Builder().setValue(sweepAngle).build())
+                .setThickness(DimensionBuilders.DpProp.Builder().setValue(6f).build())
+                .setColor(argb(backgroundRingColor))
+                .setStrokeCap(LayoutElementBuilders.STROKE_CAP_ROUND)
+                .build()
+        )
+        .build()
+
+    // 2. Progress Arc (Ring)
+    val progressArc = LayoutElementBuilders.Arc.Builder()
+        .setAnchorAngle(
+            DimensionBuilders.DegreesProp.Builder().setValue(startAngle).build()
+        )
+        .setAnchorType(LayoutElementBuilders.ARC_ANCHOR_START)
+        .addContent(
+            LayoutElementBuilders.ArcLine.Builder()
+                .setLength(DimensionBuilders.DegreesProp.Builder().setValue(arcLength).build())
+                .setThickness(DimensionBuilders.DpProp.Builder().setValue(6f).build())
+                .setColor(argb(waterBlue))
+                .setStrokeCap(LayoutElementBuilders.STROKE_CAP_ROUND)
+                .build()
+        )
+        .build()
+
+    // 3. Center Content (Bubble)
+    val centerContent = LayoutElementBuilders.Box.Builder()
+        .setWidth(DimensionBuilders.DpProp.Builder().setValue(120f).build())
+        .setHeight(DimensionBuilders.DpProp.Builder().setValue(120f).build())
+        .setModifiers(
+            ModifiersBuilders.Modifiers.Builder()
+                .setBackground(
+                    ModifiersBuilders.Background.Builder()
+                        .setColor(argb(centerBoxBackground))
+                        .setCorner(ModifiersBuilders.Corner.Builder().setRadius(DimensionBuilders.DpProp.Builder().setValue(60f).build()).build())
                         .build()
                 )
-                .addContent(
-                    // Large progress number
-                    LayoutElementBuilders.Row.Builder()
-                        .addContent(
-                            Text.Builder(context, "$progress")
-                                .setTypography(Typography.TYPOGRAPHY_DISPLAY2)
-                                .setColor(argb(waterCyan))
-                                .build()
-                        )
-                        .addContent(
-                            Text.Builder(context, " / $target")
-                                .setTypography(Typography.TYPOGRAPHY_DISPLAY3)
-                                .setColor(argb(white))
-                                .build()
-                        )
-                        .addContent(
-                            Text.Builder(context, " ml")
-                                .setTypography(Typography.TYPOGRAPHY_BODY1)
-                                .setColor(argb(white))
-                                .build()
-                        )
-                        .build()
-                )
-                .addContent(
-                    // Progress percentage indicator
-                    Text.Builder(context, "$progressPercent%")
-                        .setTypography(Typography.TYPOGRAPHY_CAPTION2)
-                        .setColor(argb(waterLightBlue))
-                        .build()
-                )
-                .addContent(
-                    Chip.Builder(context, clickable, requestParams.deviceConfiguration)
-                        .setPrimaryLabelContent("Öffnen")
-                        .setChipColors(
-                            ChipColors.primaryChipColors(
-                                Colors(
-                                    waterBlue,
-                                    white,
-                                    darkGray,
-                                    darkGray
-                                )
-                            )
-                        )
+                .setClickable(
+                    ModifiersBuilders.Clickable.Builder()
+                        .setOnClick(launchIntent)
                         .build()
                 )
                 .build()
         )
-        .setPrimaryChipContent(
-            Chip.Builder(context, clickable, requestParams.deviceConfiguration)
-                .setPrimaryLabelContent("Trinken (+)")
-                .setChipColors(
-                    ChipColors.secondaryChipColors(
-                        Colors(
-                            waterCyan,
-                            white,
-                            darkGray,
-                            darkGray
-                        )
-                    )
+        .addContent(
+            LayoutElementBuilders.Column.Builder()
+                .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+                .addContent(
+                    // Icon
+                    Text.Builder(context, "💧")
+                        .setTypography(Typography.TYPOGRAPHY_TITLE2)
+                        .setColor(argb(waterBlueWithAlpha))
+                        .build()
                 )
+                .addContent(
+                    // Progress
+                    Text.Builder(context, "$progress")
+                        .setTypography(Typography.TYPOGRAPHY_TITLE1)
+                        .setColor(argb(waterBlue))
+                        .build()
+                )
+                .addContent(
+                    // Target
+                    Text.Builder(context, "/ $target")
+                        .setTypography(Typography.TYPOGRAPHY_CAPTION1)
+                        .setColor(argb(textGray))
+                        .build()
+                )
+                .build()
+        )
+        .build()
+
+    // 4. Quick Drink Button (Compact Chip at bottom)
+    val quickDrinkButton = LayoutElementBuilders.Box.Builder()
+        .setModifiers(
+            ModifiersBuilders.Modifiers.Builder()
+                .setPadding(
+                    ModifiersBuilders.Padding.Builder()
+                        .setBottom(DimensionBuilders.DpProp.Builder().setValue(10f).build())
+                        .build()
+                )
+                .build()
+        )
+        .addContent(
+            CompactChip.Builder(context, "+100ml", quickDrinkClickable, requestParams.deviceConfiguration)
+                .setChipColors(ChipColors.primaryChipColors(Colors(
+                    waterBlue,
+                    white,
+                    buttonColor,
+                    buttonColor
+                )))
+                .build()
+        )
+        .build()
+
+    // Root Layout: BOX (No scrolling)
+    return LayoutElementBuilders.Box.Builder()
+        .setWidth(DimensionBuilders.expand())
+        .setHeight(DimensionBuilders.expand())
+        .addContent(backgroundArc)
+        .addContent(progressArc)
+        .addContent(centerContent)
+        .addContent(
+            // Position button at bottom center
+            LayoutElementBuilders.Box.Builder()
+                .setWidth(DimensionBuilders.expand())
+                .setHeight(DimensionBuilders.expand())
+                .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_BOTTOM)
+                .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+                .addContent(quickDrinkButton)
                 .build()
         )
         .build()

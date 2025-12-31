@@ -1,9 +1,11 @@
 package de.timbornemann.simplesipscheduler
 
 import android.app.Application
+import androidx.wear.tiles.TileService
 import de.timbornemann.simplesipscheduler.data.database.DrinkDatabase
 import de.timbornemann.simplesipscheduler.data.repository.DrinkRepository
 import de.timbornemann.simplesipscheduler.data.repository.SettingsRepository
+import de.timbornemann.simplesipscheduler.tile.MainTileService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,6 +23,14 @@ class SimpleSipApplication : Application() {
         // Cleanup old entries on app start
         applicationScope.launch {
             drinkRepository.cleanupOldEntries()
+        }
+        
+        // Listen for data changes and update Tile
+        applicationScope.launch {
+            drinkRepository.getTodayProgress().collect {
+                TileService.getUpdater(this@SimpleSipApplication)
+                    .requestUpdate(MainTileService::class.java)
+            }
         }
     }
 }
