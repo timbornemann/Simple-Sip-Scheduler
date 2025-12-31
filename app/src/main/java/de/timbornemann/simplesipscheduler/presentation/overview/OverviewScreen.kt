@@ -151,7 +151,7 @@ fun OverviewScreen(
                 // Water drop icon
                 Icon(
                     imageVector = Icons.Default.WaterDrop,
-                    contentDescription = "Wasser",
+                    contentDescription = "Water",
                     modifier = Modifier
                         .size(32.dp)
                         .alpha(0.8f),

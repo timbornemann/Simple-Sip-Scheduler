@@ -73,7 +73,7 @@ fun StatsScreen(
         var currentAmount by remember(entry.id) { mutableStateOf(entry.amountMl) }
         
         androidx.wear.compose.material.dialog.Alert(
-            title = { Text("Menge ändern") },
+            title = { Text("Edit Amount") },
             positiveButton = { 
                 Button(
                     onClick = { 
@@ -93,7 +93,7 @@ fun StatsScreen(
                     }, 
                     colors = ButtonDefaults.secondaryButtonColors()
                 ) { 
-                    Text("Abbr") 
+                    Text("Cancel") 
                 }
             }
         ) {
@@ -146,7 +146,7 @@ fun StatsScreen(
         // ... (Header and Tabs remain same) ...
         item {
             Text(
-                text = "Statistik",
+                text = "Statistics",
                 style = MaterialTheme.typography.title2,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -161,13 +161,13 @@ fun StatsScreen(
             ) {
                 CompactChip(
                     onClick = { currentView = StatsView.DAY },
-                    label = { Text("Tag") },
+                    label = { Text("Day") },
                     colors = if (currentView == StatsView.DAY) ChipDefaults.primaryChipColors() else ChipDefaults.secondaryChipColors(),
                     modifier = Modifier.padding(horizontal = 2.dp)
                 )
                 CompactChip(
                     onClick = { currentView = StatsView.WEEK },
-                    label = { Text("Wo") },
+                    label = { Text("Wk") },
                     colors = if (currentView == StatsView.WEEK) ChipDefaults.primaryChipColors() else ChipDefaults.secondaryChipColors(),
                     modifier = Modifier.padding(horizontal = 2.dp)
                 )
@@ -187,14 +187,14 @@ fun StatsScreen(
                 // No summary for day view, just show today's total
                 item {
                     Text(
-                        text = "Heute: ${todayTotal ?: 0} ml",
+                        text = "Today: ${todayTotal ?: 0} ml",
                         style = MaterialTheme.typography.body1,
                         color = MaterialTheme.colors.primary,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
                 if (todayEntries.isEmpty()) {
-                    item { Text("Keine Einträge", style = MaterialTheme.typography.caption1) }
+                    item { Text("No entries", style = MaterialTheme.typography.caption1) }
                 } else {
                     items(todayEntries) { entry ->
                         Row(
@@ -219,7 +219,7 @@ fun StatsScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
-                                    contentDescription = "Bearbeiten",
+                                    contentDescription = "Edit",
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -231,7 +231,7 @@ fun StatsScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Löschen",
+                                    contentDescription = "Delete",
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -243,7 +243,7 @@ fun StatsScreen(
                 // Summary for week view
                 item {
                     Text(
-                        text = "Zusammenfassung (Woche)",
+                        text = "Summary (Week)",
                         style = MaterialTheme.typography.caption1,
                         color = MaterialTheme.colors.secondary,
                         modifier = Modifier.padding(bottom = 4.dp)
@@ -257,7 +257,7 @@ fun StatsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Ø Tag",
+                            text = "Avg/Day",
                             style = MaterialTheme.typography.caption2,
                             color = MaterialTheme.colors.onSurface
                         )
@@ -277,7 +277,7 @@ fun StatsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Bester Tag",
+                                text = "Best Day",
                                 style = MaterialTheme.typography.caption2,
                                 color = MaterialTheme.colors.onSurface
                             )
@@ -298,7 +298,7 @@ fun StatsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Schlechtester Tag",
+                                text = "Worst Day",
                                 style = MaterialTheme.typography.caption2,
                                 color = MaterialTheme.colors.onSurface
                             )
@@ -315,7 +315,7 @@ fun StatsScreen(
                 
                 item {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Letzte 7 Tage", style = MaterialTheme.typography.caption1)
+                        Text("Last 7 Days", style = MaterialTheme.typography.caption1)
                         Spacer(modifier = Modifier.height(4.dp))
                         LineChart(data = weekStats, modifier = Modifier.fillMaxWidth())
                     }
@@ -332,7 +332,7 @@ fun StatsScreen(
                     }
                     item {
                         Text(
-                            text = "Vergleich",
+                            text = "Comparison",
                             style = MaterialTheme.typography.caption1,
                             color = MaterialTheme.colors.secondary,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -344,7 +344,7 @@ fun StatsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Diese Woche",
+                                text = "This Week",
                                 style = MaterialTheme.typography.caption2,
                                 color = MaterialTheme.colors.onSurface
                             )
@@ -361,7 +361,7 @@ fun StatsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Vorherige Woche",
+                                text = "Last Week",
                                 style = MaterialTheme.typography.caption2,
                                 color = MaterialTheme.colors.onSurface
                             )
@@ -378,7 +378,7 @@ fun StatsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Unterschied",
+                                text = "Difference",
                                 style = MaterialTheme.typography.caption2,
                                 color = MaterialTheme.colors.onSurface
                             )
@@ -398,13 +398,13 @@ fun StatsScreen(
                         LocalDate.now()
                     }
                     val dayName = when (date.dayOfWeek) {
-                        DayOfWeek.MONDAY -> "Mo"
-                        DayOfWeek.TUESDAY -> "Di"
-                        DayOfWeek.WEDNESDAY -> "Mi"
-                        DayOfWeek.THURSDAY -> "Do"
-                        DayOfWeek.FRIDAY -> "Fr"
-                        DayOfWeek.SATURDAY -> "Sa"
-                        DayOfWeek.SUNDAY -> "So"
+                        DayOfWeek.MONDAY -> "Mon"
+                        DayOfWeek.TUESDAY -> "Tue"
+                        DayOfWeek.WEDNESDAY -> "Wed"
+                        DayOfWeek.THURSDAY -> "Thu"
+                        DayOfWeek.FRIDAY -> "Fri"
+                        DayOfWeek.SATURDAY -> "Sat"
+                        DayOfWeek.SUNDAY -> "Sun"
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
@@ -427,7 +427,7 @@ fun StatsScreen(
                 // Summary for month view
                 item {
                     Text(
-                        text = "Zusammenfassung (Monat)",
+                        text = "Summary (Month)",
                         style = MaterialTheme.typography.caption1,
                         color = MaterialTheme.colors.secondary,
                         modifier = Modifier.padding(bottom = 4.dp)
@@ -441,7 +441,7 @@ fun StatsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Ø Tag",
+                            text = "Avg/Day",
                             style = MaterialTheme.typography.caption2,
                             color = MaterialTheme.colors.onSurface
                         )
@@ -461,7 +461,7 @@ fun StatsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Bester Tag",
+                                text = "Best Day",
                                 style = MaterialTheme.typography.caption2,
                                 color = MaterialTheme.colors.onSurface
                             )
@@ -482,7 +482,7 @@ fun StatsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Schlechtester Tag",
+                                text = "Worst Day",
                                 style = MaterialTheme.typography.caption2,
                                 color = MaterialTheme.colors.onSurface
                             )
@@ -508,7 +508,7 @@ fun StatsScreen(
                                 color = MaterialTheme.colors.onSurface
                             )
                             Text(
-                                text = "$streak Tage",
+                                text = "$streak Days",
                                 style = MaterialTheme.typography.caption2,
                                 color = if (streak > 0) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
                             )
@@ -520,7 +520,7 @@ fun StatsScreen(
                 
                 item {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Dieser Monat", style = MaterialTheme.typography.caption1)
+                        Text("This Month", style = MaterialTheme.typography.caption1)
                         Spacer(modifier = Modifier.height(4.dp))
                         LineChart(data = monthStats, modifier = Modifier.fillMaxWidth())
                     }
@@ -562,7 +562,7 @@ fun LineChart(data: List<DaySum>, modifier: Modifier = Modifier) {
     
     if (data.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            Text("Keine Daten", style = MaterialTheme.typography.caption2)
+            Text("No Data", style = MaterialTheme.typography.caption2)
         }
         return
     }

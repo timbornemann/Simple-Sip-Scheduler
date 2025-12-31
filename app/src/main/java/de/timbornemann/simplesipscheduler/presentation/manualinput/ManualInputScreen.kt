@@ -25,7 +25,7 @@ fun ManualInputScreen(
     val step = 50
 
     Alert(
-        title = { Text("Menge eingeben") },
+        title = { Text("Enter Amount") },
         positiveButton = {
             Button(
                 onClick = {
@@ -34,7 +34,7 @@ fun ManualInputScreen(
                 },
                 colors = ButtonDefaults.primaryButtonColors()
             ) {
-                Text("Hinzufügen")
+                Text("Add")
             }
         },
         negativeButton = {
@@ -42,7 +42,7 @@ fun ManualInputScreen(
                 onClick = { onDismiss() },
                 colors = ButtonDefaults.secondaryButtonColors()
             ) {
-                Text("Abbrechen")
+                Text("Cancel")
             }
         }
     ) {

@@ -39,7 +39,7 @@ fun QuickDrinkScreen(
     ) {
         item {
             Text(
-                text = "Schnell-Trinken",
+                text = "Quick Drink",
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colors.onSurface
@@ -57,7 +57,7 @@ fun QuickDrinkScreen(
         
         item {
             Chip(
-                label = { Text("Manuell eingeben") },
+                label = { Text("Manual Input") },
                 onClick = { showManualInput = true },
                 colors = ChipDefaults.secondaryChipColors(),
                 modifier = Modifier.fillMaxWidth()

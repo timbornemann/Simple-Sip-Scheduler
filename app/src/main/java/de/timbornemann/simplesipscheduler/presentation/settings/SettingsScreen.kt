@@ -59,7 +59,7 @@ fun SettingsScreen(
     ) {
         item {
             Text(
-                text = "Einstellungen",
+                text = "Settings",
                 style = MaterialTheme.typography.title2,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
@@ -70,7 +70,7 @@ fun SettingsScreen(
         // Daily Target
         item {
             Text(
-                text = "Tagesziel",
+                text = "Daily Goal",
                 style = MaterialTheme.typography.caption1,
                 color = MaterialTheme.colors.secondary,
                 modifier = Modifier.padding(top = 8.dp)
@@ -119,13 +119,13 @@ fun SettingsScreen(
         
         // Reminder Settings
         item {
-            Text("Erinnerungen", style = MaterialTheme.typography.caption1, color = MaterialTheme.colors.secondary, modifier = Modifier.padding(top = 8.dp))
+            Text("Reminders", style = MaterialTheme.typography.caption1, color = MaterialTheme.colors.secondary, modifier = Modifier.padding(top = 8.dp))
         }
         item {
             ToggleChip(
                 checked = reminderEnabled,
                 onCheckedChange = { viewModel.toggleReminder(it) },
-                label = { Text("Aktiviert") },
+                label = { Text("Enabled") },
                 toggleControl = {
                      androidx.wear.compose.material.Switch(
                          checked = reminderEnabled,
@@ -138,7 +138,7 @@ fun SettingsScreen(
         if (reminderEnabled) {
             // Reminder Mode
             item {
-                Text("Modus", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
+                Text("Mode", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
             }
             item {
                 Row(
@@ -147,7 +147,7 @@ fun SettingsScreen(
                 ) {
                     CompactChip(
                         onClick = { viewModel.setReminderMode(de.timbornemann.simplesipscheduler.data.repository.ReminderMode.ALWAYS) },
-                        label = { Text("Immer") },
+                        label = { Text("Always") },
                         colors = if (reminderMode == de.timbornemann.simplesipscheduler.data.repository.ReminderMode.ALWAYS) 
                             ChipDefaults.primaryChipColors() 
                         else 
@@ -156,7 +156,7 @@ fun SettingsScreen(
                     )
                     CompactChip(
                         onClick = { viewModel.setReminderMode(de.timbornemann.simplesipscheduler.data.repository.ReminderMode.ONLY_UNDER_TARGET) },
-                        label = { Text("Nur < Ziel") },
+                        label = { Text("Only < Goal") },
                         colors = if (reminderMode == de.timbornemann.simplesipscheduler.data.repository.ReminderMode.ONLY_UNDER_TARGET) 
                             ChipDefaults.primaryChipColors() 
                         else 
@@ -168,7 +168,7 @@ fun SettingsScreen(
             
             // Intervall Einstellung
             item {
-                Text("Intervall", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
+                Text("Interval", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
             }
             item {
                 Row(
@@ -213,11 +213,11 @@ fun SettingsScreen(
             
             // Ruhezeit Einstellung
             item {
-                Text("Ruhezeit", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
+                Text("Quiet Hours", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
             }
             item {
                 Text(
-                    text = "$quietHoursStart - $quietHoursEnd Uhr",
+                    text = "$quietHoursStart:00 - $quietHoursEnd:00",
                     style = MaterialTheme.typography.caption2,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -248,7 +248,7 @@ fun SettingsScreen(
                     
                     // Start Zeit in der Mitte
                     Text(
-                        text = "${quietHoursStart} Uhr",
+                        text = "${quietHoursStart}:00",
                         style = MaterialTheme.typography.body1,
                         color = MaterialTheme.colors.primary,
                         modifier = Modifier.padding(horizontal = 16.dp)
@@ -270,7 +270,7 @@ fun SettingsScreen(
             
             // Ende Zeit
             item {
-                Text("Ende", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
+                Text("End", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
             }
             item {
                 Row(
@@ -293,7 +293,7 @@ fun SettingsScreen(
                     
                     // Ende Zeit in der Mitte
                     Text(
-                        text = "${quietHoursEnd} Uhr",
+                        text = "${quietHoursEnd}:00",
                         style = MaterialTheme.typography.body1,
                         color = MaterialTheme.colors.primary,
                         modifier = Modifier.padding(horizontal = 16.dp)
@@ -387,7 +387,7 @@ fun SettingsScreen(
         }
         item {
             Chip(
-                label = { Text("Button hinzufügen") },
+                label = { Text("Add Button") },
                 onClick = {
                     val newConfig = buttonConfig.toMutableList()
                     newConfig.add(250) // Add default 250ml
