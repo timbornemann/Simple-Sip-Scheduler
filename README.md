@@ -65,7 +65,7 @@ To install and debug the app wirelessly on your smartwatch, follow these steps:
     *   Open Android Studio.
     *   Click on **Pair Devices Using Wi-Fi** in the device dropdown menu (top toolbar).
     *   On the watch, under *Developer options > Wireless debugging*, select **Pair new device**.
-    *   Scan the QR code with the watch or enter the pairing code in Android Studio.
+    *   Enter the pairing code in Android Studio.
 
 4.  **Start App:**
     *   Select your watch as the target device in Android Studio.
