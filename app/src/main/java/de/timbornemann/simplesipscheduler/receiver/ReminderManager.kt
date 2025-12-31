@@ -20,15 +20,7 @@ object ReminderManager {
                 Log.e(TAG, "AlarmManager service not available")
                 return
             }
-            
-            // Check if we can schedule exact alarms (Android 12+)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (!alarmManager.canScheduleExactAlarms()) {
-                    Log.e(TAG, "Cannot schedule exact alarms - permission not granted")
-                    return
-                }
-            }
-            
+
             val intent = Intent(context, ReminderReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
@@ -36,19 +28,21 @@ object ReminderManager {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-
+            
             // Cancel previous if existing
             alarmManager.cancel(pendingIntent)
 
             // Set new alarm
             val triggerAtMillis = SystemClock.elapsedRealtime() + delayMs
             
-            alarmManager.setExactAndAllowWhileIdle(
+            // Use setAndAllowWhileIdle for battery efficiency.
+            // This is inexact (system can batch it) but ensures it fires even in Doze mode.
+            alarmManager.setAndAllowWhileIdle(
                 AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 triggerAtMillis,
                 pendingIntent
             )
-            Log.d(TAG, "Reminder scheduled for ${delayMs}ms from now")
+            Log.d(TAG, "Reminder scheduled for ~${delayMs}ms from now")
         } catch (e: Exception) {
             Log.e(TAG, "Error scheduling reminder", e)
         }
