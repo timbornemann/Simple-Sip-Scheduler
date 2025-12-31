@@ -26,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Chip
+import androidx.wear.compose.material.ChipDefaults
+import androidx.wear.compose.material.CompactChip
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.ScalingLazyColumn
@@ -48,6 +50,7 @@ fun SettingsScreen(
     val reminderInterval by viewModel.reminderInterval.collectAsState()
     val quietHoursStart by viewModel.quietHoursStart.collectAsState()
     val quietHoursEnd by viewModel.quietHoursEnd.collectAsState()
+    val reminderMode by viewModel.reminderMode.collectAsState()
     val buttonConfig by viewModel.buttonConfig.collectAsState()
     
     ScalingLazyColumn(
@@ -133,6 +136,36 @@ fun SettingsScreen(
             )
         }
         if (reminderEnabled) {
+            // Reminder Mode
+            item {
+                Text("Modus", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
+            }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CompactChip(
+                        onClick = { viewModel.setReminderMode(de.timbornemann.simplesipscheduler.data.repository.ReminderMode.ALWAYS) },
+                        label = { Text("Immer") },
+                        colors = if (reminderMode == de.timbornemann.simplesipscheduler.data.repository.ReminderMode.ALWAYS) 
+                            ChipDefaults.primaryChipColors() 
+                        else 
+                            ChipDefaults.secondaryChipColors(),
+                        modifier = Modifier.padding(horizontal = 2.dp)
+                    )
+                    CompactChip(
+                        onClick = { viewModel.setReminderMode(de.timbornemann.simplesipscheduler.data.repository.ReminderMode.ONLY_UNDER_TARGET) },
+                        label = { Text("Nur < Ziel") },
+                        colors = if (reminderMode == de.timbornemann.simplesipscheduler.data.repository.ReminderMode.ONLY_UNDER_TARGET) 
+                            ChipDefaults.primaryChipColors() 
+                        else 
+                            ChipDefaults.secondaryChipColors(),
+                        modifier = Modifier.padding(horizontal = 2.dp)
+                    )
+                }
+            }
+            
             // Intervall Einstellung
             item {
                 Text("Intervall", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))

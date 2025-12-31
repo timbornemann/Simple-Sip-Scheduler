@@ -11,8 +11,11 @@ import de.timbornemann.simplesipscheduler.receiver.ReminderManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import de.timbornemann.simplesipscheduler.data.database.DaySum
 
 class MainViewModel(
     private val application: Application,
@@ -50,9 +53,53 @@ class MainViewModel(
     val quietHoursEnd = settingsRepository.quietHoursEnd
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsRepository.DEFAULT_QUIET_END)
 
+    val reminderMode = settingsRepository.reminderMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsRepository.DEFAULT_REMINDER_MODE)
+
+    // Enhanced Statistics
+    private val _averageDaily = MutableStateFlow<Int?>(null)
+    val averageDaily = _averageDaily.asStateFlow()
+
+    private val _bestDay = MutableStateFlow<DaySum?>(null)
+    val bestDay = _bestDay.asStateFlow()
+
+    private val _worstDay = MutableStateFlow<DaySum?>(null)
+    val worstDay = _worstDay.asStateFlow()
+
+    private val _currentStreak = MutableStateFlow<Int?>(null)
+    val currentStreak = _currentStreak.asStateFlow()
+
+    val previousWeekStats = drinkRepository.getPreviousWeekStats()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    init {
+        loadEnhancedStatistics()
+    }
+
+    private fun loadEnhancedStatistics() {
+        viewModelScope.launch {
+            // Load average daily (last 7 days)
+            _averageDaily.value = drinkRepository.getAverageDaily(7)
+            
+            // Load best and worst days (last 30 days)
+            _bestDay.value = drinkRepository.getBestDay(30)
+            _worstDay.value = drinkRepository.getWorstDay(30)
+            
+            // Load current streak
+            val target = dailyTarget.value
+            _currentStreak.value = drinkRepository.getCurrentStreak(target)
+        }
+    }
+
+    fun refreshStatistics() {
+        loadEnhancedStatistics()
+    }
+
     fun addDrink(amount: Int) {
         viewModelScope.launch {
             drinkRepository.addDrink(amount)
+            // Refresh statistics after adding drink
+            loadEnhancedStatistics()
             if (reminderEnabled.value) {
                 // Reschedule with current interval
                 val interval = reminderInterval.value.toLong() * 60 * 1000L
@@ -98,6 +145,8 @@ class MainViewModel(
     fun updateDailyTarget(target: Int) {
         viewModelScope.launch {
             settingsRepository.setDailyTarget(target)
+            // Refresh streak with new target
+            _currentStreak.value = drinkRepository.getCurrentStreak(target)
         }
     }
 
@@ -117,6 +166,12 @@ class MainViewModel(
                 // If scheduling fails, disable the reminder setting
                 settingsRepository.setReminderEnabled(false)
             }
+        }
+    }
+
+    fun setReminderMode(mode: de.timbornemann.simplesipscheduler.data.repository.ReminderMode) {
+        viewModelScope.launch {
+            settingsRepository.setReminderMode(mode)
         }
     }
 }

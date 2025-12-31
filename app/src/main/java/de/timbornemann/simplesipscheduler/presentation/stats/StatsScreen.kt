@@ -42,8 +42,21 @@ fun StatsScreen(
     val todayTotal by viewModel.todayProgress.collectAsState()
     val weekStats by viewModel.weekStats.collectAsState()
     val monthStats by viewModel.monthStats.collectAsState()
+    val previousWeekStats by viewModel.previousWeekStats.collectAsState()
+    
+    // Enhanced Statistics
+    val averageDaily by viewModel.averageDaily.collectAsState()
+    val bestDay by viewModel.bestDay.collectAsState()
+    val worstDay by viewModel.worstDay.collectAsState()
+    val currentStreak by viewModel.currentStreak.collectAsState()
+    val dailyTarget by viewModel.dailyTarget.collectAsState()
 
     var entryToEdit by remember { mutableStateOf<de.timbornemann.simplesipscheduler.data.database.DrinkEntry?>(null) }
+    
+    // Refresh statistics when screen is shown
+    LaunchedEffect(Unit) {
+        viewModel.refreshStatistics()
+    }
 
     if (entryToEdit != null) {
         val entry = entryToEdit!!
@@ -159,6 +172,100 @@ fun StatsScreen(
 
         item { Spacer(modifier = Modifier.height(8.dp)) }
 
+        // Summary Section
+        item {
+            Text(
+                text = "Zusammenfassung",
+                style = MaterialTheme.typography.caption1,
+                color = MaterialTheme.colors.secondary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+        
+        // Average Daily
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Ø Tag (7d)",
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.onSurface
+                )
+                Text(
+                    text = "${averageDaily ?: 0} ml",
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.primary
+                )
+            }
+        }
+        
+        // Best Day
+        bestDay?.let { best ->
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Bester Tag",
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.onSurface
+                    )
+                    Text(
+                        text = "${best.total} ml",
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.primary
+                    )
+                }
+            }
+        }
+        
+        // Worst Day
+        worstDay?.let { worst ->
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Schlechtester Tag",
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.onSurface
+                    )
+                    Text(
+                        text = "${worst.total} ml",
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.primary
+                    )
+                }
+            }
+        }
+        
+        // Current Streak
+        currentStreak?.let { streak ->
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Streak",
+                        style = MaterialTheme.typography.caption2,
+                        color = MaterialTheme.colors.onSurface
+                    )
+                    Text(
+                        text = "$streak Tage",
+                        style = MaterialTheme.typography.caption2,
+                        color = if (streak > 0) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
+        
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+
         when (currentView) {
             StatsView.DAY -> {
                 item {
@@ -221,6 +328,76 @@ fun StatsScreen(
                         Text("Letzte 7 Tage", style = MaterialTheme.typography.caption1)
                         Spacer(modifier = Modifier.height(4.dp))
                         LineChart(data = weekStats, modifier = Modifier.fillMaxWidth())
+                    }
+                }
+                
+                // Comparison with previous week
+                if (previousWeekStats.isNotEmpty()) {
+                    val currentWeekTotal = weekStats.sumOf { it.total }
+                    val previousWeekTotal = previousWeekStats.sumOf { it.total }
+                    val difference = currentWeekTotal - previousWeekTotal
+                    
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    item {
+                        Text(
+                            text = "Vergleich",
+                            style = MaterialTheme.typography.caption1,
+                            color = MaterialTheme.colors.secondary,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Diese Woche",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.onSurface
+                            )
+                            Text(
+                                text = "$currentWeekTotal ml",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.primary
+                            )
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Vorherige Woche",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.onSurface
+                            )
+                            Text(
+                                text = "$previousWeekTotal ml",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Unterschied",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.onSurface
+                            )
+                            Text(
+                                text = "${if (difference >= 0) "+" else ""}$difference ml",
+                                style = MaterialTheme.typography.caption2,
+                                color = if (difference >= 0) MaterialTheme.colors.primary else MaterialTheme.colors.error
+                            )
+                        }
                     }
                 }
                 // Show data points as scrollable list with day names (Mo-So)

@@ -1,7 +1,7 @@
 package de.timbornemann.simplesipscheduler.tile
 
 import android.content.Context
-import android.content.Intent
+import android.content.Intent as AndroidIntent
 import androidx.wear.protolayout.ColorBuilders.argb
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
@@ -23,6 +23,7 @@ import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.tiles.SuspendingTileService
 import de.timbornemann.simplesipscheduler.SimpleSipApplication
 import de.timbornemann.simplesipscheduler.presentation.MainActivity
+import de.timbornemann.simplesipscheduler.receiver.ReminderReceiver
 import kotlinx.coroutines.flow.first
 
 private const val RESOURCES_VERSION = "0"

@@ -1,5 +1,9 @@
 package de.timbornemann.simplesipscheduler.presentation
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,18 +20,57 @@ import de.timbornemann.simplesipscheduler.presentation.quickdrink.QuickDrinkScre
 import de.timbornemann.simplesipscheduler.presentation.settings.SettingsScreen
 import de.timbornemann.simplesipscheduler.presentation.stats.StatsScreen
 import de.timbornemann.simplesipscheduler.presentation.theme.SimpleSipTheme
+import de.timbornemann.simplesipscheduler.receiver.ReminderReceiver
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private var viewModel: MainViewModel? = null
+    private val quickActionReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ReminderReceiver.ACTION_ADD_DRINK) {
+                val amount = intent.getIntExtra(ReminderReceiver.EXTRA_AMOUNT, 0)
+                if (amount > 0) {
+                    // Use application context to add drink directly
+                    val app = context?.applicationContext as? SimpleSipApplication
+                    app?.let {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            it.drinkRepository.addDrink(amount)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContent {
             val app = application as SimpleSipApplication
-            val viewModel: MainViewModel = viewModel(
+            viewModel = viewModel(
                 factory = MainViewModelFactory(app, app.drinkRepository, app.settingsRepository)
             )
             
-            WearApp(viewModel)
+            WearApp(viewModel!!)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val filter = IntentFilter(ReminderReceiver.ACTION_ADD_DRINK).apply {
+            addCategory(Intent.CATEGORY_DEFAULT)
+        }
+        registerReceiver(quickActionReceiver, filter, Context.RECEIVER_EXPORTED)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try {
+            unregisterReceiver(quickActionReceiver)
+        } catch (e: Exception) {
+            // Receiver might not be registered
         }
     }
 }

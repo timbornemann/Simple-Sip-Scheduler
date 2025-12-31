@@ -35,5 +35,20 @@ interface DrinkDao {
     @Query("SELECT strftime('%Y-%m-%d', datetime(timestamp / 1000, 'unixepoch', 'localtime')) as date, SUM(amountMl) as total FROM drink_entries WHERE timestamp >= :startTime AND timestamp < :endTime GROUP BY date ORDER BY date ASC")
     fun getDailySumsInRange(startTime: Long, endTime: Long): Flow<List<DaySum>>
 
+    // Average daily for last N days
+    @Query("SELECT AVG(daily_total) FROM (SELECT strftime('%Y-%m-%d', datetime(timestamp / 1000, 'unixepoch', 'localtime')) as date, SUM(amountMl) as daily_total FROM drink_entries WHERE timestamp >= :startTime AND timestamp < :endTime GROUP BY date)")
+    suspend fun getAverageDailyInRange(startTime: Long, endTime: Long): Double?
+
+    // Best day (highest total)
+    @Query("SELECT strftime('%Y-%m-%d', datetime(timestamp / 1000, 'unixepoch', 'localtime')) as date, SUM(amountMl) as total FROM drink_entries WHERE timestamp >= :startTime AND timestamp < :endTime GROUP BY date ORDER BY total DESC LIMIT 1")
+    suspend fun getBestDayInRange(startTime: Long, endTime: Long): DaySum?
+
+    // Worst day (lowest total, excluding 0)
+    @Query("SELECT strftime('%Y-%m-%d', datetime(timestamp / 1000, 'unixepoch', 'localtime')) as date, SUM(amountMl) as total FROM drink_entries WHERE timestamp >= :startTime AND timestamp < :endTime GROUP BY date HAVING total > 0 ORDER BY total ASC LIMIT 1")
+    suspend fun getWorstDayInRange(startTime: Long, endTime: Long): DaySum?
+
+    // Get all daily sums for streak calculation
+    @Query("SELECT strftime('%Y-%m-%d', datetime(timestamp / 1000, 'unixepoch', 'localtime')) as date, SUM(amountMl) as total FROM drink_entries WHERE timestamp >= :startTime GROUP BY date ORDER BY date DESC")
+    suspend fun getDailySumsFromDate(startTime: Long): List<DaySum>
 
 }

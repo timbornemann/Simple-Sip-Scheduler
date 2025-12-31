@@ -20,6 +20,7 @@ class SettingsRepository(private val context: Context) {
         val BUTTON_CONFIG_KEY = stringPreferencesKey("button_config")
         val REMINDER_ENABLED_KEY = booleanPreferencesKey("reminder_enabled")
         val REMINDER_INTERVAL_KEY = intPreferencesKey("reminder_interval")
+        val REMINDER_MODE_KEY = stringPreferencesKey("reminder_mode")
         val QUIET_HOURS_START_KEY = intPreferencesKey("quiet_hours_start")
         val QUIET_HOURS_END_KEY = intPreferencesKey("quiet_hours_end")
 
@@ -28,6 +29,7 @@ class SettingsRepository(private val context: Context) {
         const val DEFAULT_INTERVAL_MINUTES = 120 // 2 hours
         const val DEFAULT_QUIET_START = 22 // 10 PM
         const val DEFAULT_QUIET_END = 7   // 7 AM
+        val DEFAULT_REMINDER_MODE = ReminderMode.ALWAYS
     }
 
     val dailyTarget: Flow<Int> = context.dataStore.data
@@ -62,6 +64,16 @@ class SettingsRepository(private val context: Context) {
             preferences[QUIET_HOURS_END_KEY] ?: DEFAULT_QUIET_END
         }
 
+    val reminderMode: Flow<ReminderMode> = context.dataStore.data
+        .map { preferences ->
+            val modeString = preferences[REMINDER_MODE_KEY] ?: DEFAULT_REMINDER_MODE.name
+            try {
+                ReminderMode.valueOf(modeString)
+            } catch (e: Exception) {
+                DEFAULT_REMINDER_MODE
+            }
+        }
+
     suspend fun setDailyTarget(target: Int) {
         context.dataStore.edit { preferences ->
             preferences[DAILY_TARGET_KEY] = target
@@ -91,6 +103,12 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[QUIET_HOURS_START_KEY] = start
             preferences[QUIET_HOURS_END_KEY] = end
+        }
+    }
+
+    suspend fun setReminderMode(mode: ReminderMode) {
+        context.dataStore.edit { preferences ->
+            preferences[REMINDER_MODE_KEY] = mode.name
         }
     }
 }
