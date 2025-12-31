@@ -108,7 +108,7 @@ fun StatsScreen(
                     // Minus Button (links)
                     Button(
                         onClick = { 
-                            currentAmount = (currentAmount - 50).coerceAtLeast(0)
+                            currentAmount = currentAmount - 50
                         },
                         colors = ButtonDefaults.secondaryButtonColors(),
                         modifier = Modifier.size(48.dp)
@@ -582,8 +582,9 @@ fun LineChart(data: List<DaySum>, modifier: Modifier = Modifier) {
         Box(modifier = Modifier.height(50.dp).fillMaxWidth()) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val maxVal = data.maxOfOrNull { it.total }?.toFloat() ?: 1f
-                val minVal = 0f
-                val valueRange = maxVal - minVal
+                val minVal = data.minOfOrNull { it.total }?.toFloat() ?: 0f
+                // Ensure we have a valid range, even if all values are the same
+                val valueRange = if (maxVal != minVal) maxVal - minVal else 1f
                 
                 // More horizontal padding to bring points closer together and center them
                 val horizontalPadding = 8.dp.toPx()

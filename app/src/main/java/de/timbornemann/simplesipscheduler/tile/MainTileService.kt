@@ -26,7 +26,8 @@ import de.timbornemann.simplesipscheduler.presentation.MainActivity
 import kotlinx.coroutines.flow.first
 
 private const val RESOURCES_VERSION = "1"
-private const val ID_ADD_100 = "add_100"
+private const val ID_ADD_50 = "add_50"
+private const val ID_SUBTRACT_50 = "subtract_50"
 
 @OptIn(ExperimentalHorologistApi::class)
 class MainTileService : SuspendingTileService() {
@@ -40,9 +41,10 @@ class MainTileService : SuspendingTileService() {
     ): TileBuilders.Tile {
         val app = applicationContext as SimpleSipApplication
         
-        // Handle Quick Drink Click
-        if (requestParams.state?.lastClickableId == ID_ADD_100) {
-            app.drinkRepository.addDrink(100)
+        // Handle Quick Drink Clicks
+        when (requestParams.state?.lastClickableId) {
+            ID_ADD_50 -> app.drinkRepository.addDrink(50)
+            ID_SUBTRACT_50 -> app.drinkRepository.addDrink(-50)
         }
 
         val progress = app.drinkRepository.getTodayProgress().first() ?: 0
@@ -100,9 +102,14 @@ private fun tileLayout(
         )
         .build()
     
-    // Quick drink action (100ml) - LoadAction
-    val quickDrinkClickable = ModifiersBuilders.Clickable.Builder()
-        .setId(ID_ADD_100)
+    // Quick drink actions (+50ml and -50ml) - LoadAction
+    val add50Clickable = ModifiersBuilders.Clickable.Builder()
+        .setId(ID_ADD_50)
+        .setOnClick(ActionBuilders.LoadAction.Builder().build())
+        .build()
+    
+    val subtract50Clickable = ModifiersBuilders.Clickable.Builder()
+        .setId(ID_SUBTRACT_50)
         .setOnClick(ActionBuilders.LoadAction.Builder().build())
         .build()
 
@@ -205,8 +212,8 @@ private fun tileLayout(
         )
         .build()
 
-    // 4. Quick Drink Button (Compact Chip at bottom)
-    val quickDrinkButton = LayoutElementBuilders.Box.Builder()
+    // 4. Quick Drink Buttons (Plus and Minus at bottom)
+    val quickDrinkButtons = LayoutElementBuilders.Box.Builder()
         .setModifiers(
             ModifiersBuilders.Modifiers.Builder()
                 .setPadding(
@@ -217,13 +224,32 @@ private fun tileLayout(
                 .build()
         )
         .addContent(
-            CompactChip.Builder(context, "+100ml", quickDrinkClickable, requestParams.deviceConfiguration)
-                .setChipColors(ChipColors.primaryChipColors(Colors(
-                    waterBlue,
-                    white,
-                    buttonColor,
-                    buttonColor
-                )))
+            LayoutElementBuilders.Row.Builder()
+                .addContent(
+                    CompactChip.Builder(context, "-50", subtract50Clickable, requestParams.deviceConfiguration)
+                        .setChipColors(ChipColors.primaryChipColors(Colors(
+                            waterBlue,
+                            white,
+                            buttonColor,
+                            buttonColor
+                        )))
+                        .build()
+                )
+                .addContent(
+                    LayoutElementBuilders.Spacer.Builder()
+                        .setWidth(DimensionBuilders.DpProp.Builder().setValue(6f).build())
+                        .build()
+                )
+                .addContent(
+                    CompactChip.Builder(context, "+50", add50Clickable, requestParams.deviceConfiguration)
+                        .setChipColors(ChipColors.primaryChipColors(Colors(
+                            waterBlue,
+                            white,
+                            buttonColor,
+                            buttonColor
+                        )))
+                        .build()
+                )
                 .build()
         )
         .build()
@@ -242,7 +268,7 @@ private fun tileLayout(
                 .setHeight(DimensionBuilders.expand())
                 .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_BOTTOM)
                 .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-                .addContent(quickDrinkButton)
+                .addContent(quickDrinkButtons)
                 .build()
         )
         .build()
