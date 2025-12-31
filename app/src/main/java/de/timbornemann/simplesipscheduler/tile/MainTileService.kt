@@ -59,6 +59,16 @@ private fun resources(
 ): ResourceBuilders.Resources {
     return ResourceBuilders.Resources.Builder()
         .setVersion(RESOURCES_VERSION)
+        .addIdToImageMapping(
+            "water_drop_icon",
+            ResourceBuilders.ImageResource.Builder()
+                .setAndroidResourceByResId(
+                    ResourceBuilders.AndroidImageResourceByResId.Builder()
+                        .setResourceId(de.timbornemann.simplesipscheduler.R.drawable.ic_water_drop)
+                        .build()
+                )
+                .build()
+        )
         .build()
 }
 
@@ -189,9 +199,10 @@ private fun tileLayout(
                 .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
                 .addContent(
                     // Icon
-                    Text.Builder(context, "💧")
-                        .setTypography(Typography.TYPOGRAPHY_TITLE2)
-                        .setColor(argb(waterBlueWithAlpha))
+                    LayoutElementBuilders.Image.Builder()
+                        .setResourceId("water_drop_icon")
+                        .setWidth(DimensionBuilders.DpProp.Builder().setValue(32f).build())
+                        .setHeight(DimensionBuilders.DpProp.Builder().setValue(32f).build())
                         .build()
                 )
                 .addContent(
