@@ -138,4 +138,69 @@ class DrinkRepository(private val drinkDao: DrinkDao) {
         val end = endOfPreviousWeek.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
         return drinkDao.getDailySumsInRange(start, end)
     }
+
+    suspend fun getWeekAverage(): Int {
+        val today = LocalDate.now()
+        val startDate = today.minusDays(6)
+        val zoneId = ZoneId.systemDefault()
+        val start = startDate.atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val end = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val average = drinkDao.getAverageDailyInRange(start, end)
+        return average?.toInt() ?: 0
+    }
+
+    suspend fun getWeekBestDay(): DaySum? {
+        val today = LocalDate.now()
+        val startDate = today.minusDays(6)
+        val zoneId = ZoneId.systemDefault()
+        val start = startDate.atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val end = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        return drinkDao.getBestDayInRange(start, end)
+    }
+
+    suspend fun getWeekWorstDay(): DaySum? {
+        val today = LocalDate.now()
+        val startDate = today.minusDays(6)
+        val zoneId = ZoneId.systemDefault()
+        val start = startDate.atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val end = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        return drinkDao.getWorstDayInRange(start, end)
+    }
+
+    suspend fun getMonthAverage(): Int {
+        val today = LocalDate.now()
+        val startOfMonth = today.withDayOfMonth(1)
+        val zoneId = ZoneId.systemDefault()
+        val start = startOfMonth.atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val end = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val average = drinkDao.getAverageDailyInRange(start, end)
+        return average?.toInt() ?: 0
+    }
+
+    suspend fun getMonthBestDay(): DaySum? {
+        val today = LocalDate.now()
+        val startOfMonth = today.withDayOfMonth(1)
+        val zoneId = ZoneId.systemDefault()
+        val start = startOfMonth.atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val end = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        return drinkDao.getBestDayInRange(start, end)
+    }
+
+    suspend fun getMonthWorstDay(): DaySum? {
+        val today = LocalDate.now()
+        val startOfMonth = today.withDayOfMonth(1)
+        val zoneId = ZoneId.systemDefault()
+        val start = startOfMonth.atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val end = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        return drinkDao.getWorstDayInRange(start, end)
+    }
+
+    suspend fun cleanupOldEntries() {
+        // Delete entries older than 31 days
+        val today = LocalDate.now()
+        val cutoffDate = today.minusDays(31)
+        val zoneId = ZoneId.systemDefault()
+        val cutoffTimestamp = cutoffDate.atStartOfDay(zoneId).toInstant().toEpochMilli()
+        drinkDao.deleteOldEntries(cutoffTimestamp)
+    }
 }

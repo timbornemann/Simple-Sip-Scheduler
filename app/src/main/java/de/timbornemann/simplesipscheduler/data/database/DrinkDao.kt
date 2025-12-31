@@ -51,4 +51,8 @@ interface DrinkDao {
     @Query("SELECT strftime('%Y-%m-%d', datetime(timestamp / 1000, 'unixepoch', 'localtime')) as date, SUM(amountMl) as total FROM drink_entries WHERE timestamp >= :startTime GROUP BY date ORDER BY date DESC")
     suspend fun getDailySumsFromDate(startTime: Long): List<DaySum>
 
+    // Delete old entries (older than specified timestamp)
+    @Query("DELETE FROM drink_entries WHERE timestamp < :cutoffTimestamp")
+    suspend fun deleteOldEntries(cutoffTimestamp: Long)
+
 }

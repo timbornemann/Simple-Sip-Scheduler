@@ -44,17 +44,27 @@ fun StatsScreen(
     val monthStats by viewModel.monthStats.collectAsState()
     val previousWeekStats by viewModel.previousWeekStats.collectAsState()
     
-    // Enhanced Statistics
+    // Enhanced Statistics - General
     val averageDaily by viewModel.averageDaily.collectAsState()
     val bestDay by viewModel.bestDay.collectAsState()
     val worstDay by viewModel.worstDay.collectAsState()
     val currentStreak by viewModel.currentStreak.collectAsState()
     val dailyTarget by viewModel.dailyTarget.collectAsState()
+    
+    // Week-specific statistics
+    val weekAverage by viewModel.weekAverage.collectAsState()
+    val weekBestDay by viewModel.weekBestDay.collectAsState()
+    val weekWorstDay by viewModel.weekWorstDay.collectAsState()
+    
+    // Month-specific statistics
+    val monthAverage by viewModel.monthAverage.collectAsState()
+    val monthBestDay by viewModel.monthBestDay.collectAsState()
+    val monthWorstDay by viewModel.monthWorstDay.collectAsState()
 
     var entryToEdit by remember { mutableStateOf<de.timbornemann.simplesipscheduler.data.database.DrinkEntry?>(null) }
     
-    // Refresh statistics when screen is shown
-    LaunchedEffect(Unit) {
+    // Refresh statistics when screen is shown or view changes
+    LaunchedEffect(currentView) {
         viewModel.refreshStatistics()
     }
 
@@ -172,102 +182,9 @@ fun StatsScreen(
 
         item { Spacer(modifier = Modifier.height(8.dp)) }
 
-        // Summary Section
-        item {
-            Text(
-                text = "Zusammenfassung",
-                style = MaterialTheme.typography.caption1,
-                color = MaterialTheme.colors.secondary,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-        }
-        
-        // Average Daily
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Ø Tag (7d)",
-                    style = MaterialTheme.typography.caption2,
-                    color = MaterialTheme.colors.onSurface
-                )
-                Text(
-                    text = "${averageDaily ?: 0} ml",
-                    style = MaterialTheme.typography.caption2,
-                    color = MaterialTheme.colors.primary
-                )
-            }
-        }
-        
-        // Best Day
-        bestDay?.let { best ->
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Bester Tag",
-                        style = MaterialTheme.typography.caption2,
-                        color = MaterialTheme.colors.onSurface
-                    )
-                    Text(
-                        text = "${best.total} ml",
-                        style = MaterialTheme.typography.caption2,
-                        color = MaterialTheme.colors.primary
-                    )
-                }
-            }
-        }
-        
-        // Worst Day
-        worstDay?.let { worst ->
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Schlechtester Tag",
-                        style = MaterialTheme.typography.caption2,
-                        color = MaterialTheme.colors.onSurface
-                    )
-                    Text(
-                        text = "${worst.total} ml",
-                        style = MaterialTheme.typography.caption2,
-                        color = MaterialTheme.colors.primary
-                    )
-                }
-            }
-        }
-        
-        // Current Streak
-        currentStreak?.let { streak ->
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Streak",
-                        style = MaterialTheme.typography.caption2,
-                        color = MaterialTheme.colors.onSurface
-                    )
-                    Text(
-                        text = "$streak Tage",
-                        style = MaterialTheme.typography.caption2,
-                        color = if (streak > 0) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-            }
-        }
-        
-        item { Spacer(modifier = Modifier.height(8.dp)) }
-
         when (currentView) {
             StatsView.DAY -> {
+                // No summary for day view, just show today's total
                 item {
                     Text(
                         text = "Heute: ${todayTotal ?: 0} ml",
@@ -323,6 +240,79 @@ fun StatsScreen(
                 }
             }
             StatsView.WEEK -> {
+                // Summary for week view
+                item {
+                    Text(
+                        text = "Zusammenfassung (Woche)",
+                        style = MaterialTheme.typography.caption1,
+                        color = MaterialTheme.colors.secondary,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+                
+                // Week Average
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Ø Tag",
+                            style = MaterialTheme.typography.caption2,
+                            color = MaterialTheme.colors.onSurface
+                        )
+                        Text(
+                            text = "${weekAverage ?: 0} ml",
+                            style = MaterialTheme.typography.caption2,
+                            color = MaterialTheme.colors.primary
+                        )
+                    }
+                }
+                
+                // Week Best Day
+                weekBestDay?.let { best ->
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Bester Tag",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.onSurface
+                            )
+                            Text(
+                                text = "${best.total} ml",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.primary
+                            )
+                        }
+                    }
+                }
+                
+                // Week Worst Day
+                weekWorstDay?.let { worst ->
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Schlechtester Tag",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.onSurface
+                            )
+                            Text(
+                                text = "${worst.total} ml",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.primary
+                            )
+                        }
+                    }
+                }
+                
+                item { Spacer(modifier = Modifier.height(8.dp)) }
+                
                 item {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Letzte 7 Tage", style = MaterialTheme.typography.caption1)
@@ -434,6 +424,100 @@ fun StatsScreen(
                 }
             }
             StatsView.MONTH -> {
+                // Summary for month view
+                item {
+                    Text(
+                        text = "Zusammenfassung (Monat)",
+                        style = MaterialTheme.typography.caption1,
+                        color = MaterialTheme.colors.secondary,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+                
+                // Month Average
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Ø Tag",
+                            style = MaterialTheme.typography.caption2,
+                            color = MaterialTheme.colors.onSurface
+                        )
+                        Text(
+                            text = "${monthAverage ?: 0} ml",
+                            style = MaterialTheme.typography.caption2,
+                            color = MaterialTheme.colors.primary
+                        )
+                    }
+                }
+                
+                // Month Best Day
+                monthBestDay?.let { best ->
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Bester Tag",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.onSurface
+                            )
+                            Text(
+                                text = "${best.total} ml",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.primary
+                            )
+                        }
+                    }
+                }
+                
+                // Month Worst Day
+                monthWorstDay?.let { worst ->
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Schlechtester Tag",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.onSurface
+                            )
+                            Text(
+                                text = "${worst.total} ml",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.primary
+                            )
+                        }
+                    }
+                }
+                
+                // Current Streak (only shown in month view)
+                currentStreak?.let { streak ->
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Streak",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.onSurface
+                            )
+                            Text(
+                                text = "$streak Tage",
+                                style = MaterialTheme.typography.caption2,
+                                color = if (streak > 0) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+                
+                item { Spacer(modifier = Modifier.height(8.dp)) }
+                
                 item {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Dieser Monat", style = MaterialTheme.typography.caption1)

@@ -56,7 +56,7 @@ class MainViewModel(
     val reminderMode = settingsRepository.reminderMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsRepository.DEFAULT_REMINDER_MODE)
 
-    // Enhanced Statistics
+    // Enhanced Statistics - General (30 days)
     private val _averageDaily = MutableStateFlow<Int?>(null)
     val averageDaily = _averageDaily.asStateFlow()
 
@@ -69,25 +69,62 @@ class MainViewModel(
     private val _currentStreak = MutableStateFlow<Int?>(null)
     val currentStreak = _currentStreak.asStateFlow()
 
+    // Week-specific statistics
+    private val _weekAverage = MutableStateFlow<Int?>(null)
+    val weekAverage = _weekAverage.asStateFlow()
+
+    private val _weekBestDay = MutableStateFlow<DaySum?>(null)
+    val weekBestDay = _weekBestDay.asStateFlow()
+
+    private val _weekWorstDay = MutableStateFlow<DaySum?>(null)
+    val weekWorstDay = _weekWorstDay.asStateFlow()
+
+    // Month-specific statistics
+    private val _monthAverage = MutableStateFlow<Int?>(null)
+    val monthAverage = _monthAverage.asStateFlow()
+
+    private val _monthBestDay = MutableStateFlow<DaySum?>(null)
+    val monthBestDay = _monthBestDay.asStateFlow()
+
+    private val _monthWorstDay = MutableStateFlow<DaySum?>(null)
+    val monthWorstDay = _monthWorstDay.asStateFlow()
+
     val previousWeekStats = drinkRepository.getPreviousWeekStats()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         loadEnhancedStatistics()
+        cleanupOldEntries()
     }
 
     private fun loadEnhancedStatistics() {
         viewModelScope.launch {
-            // Load average daily (last 7 days)
+            // Load average daily (last 7 days) - general
             _averageDaily.value = drinkRepository.getAverageDaily(7)
             
-            // Load best and worst days (last 30 days)
+            // Load best and worst days (last 30 days) - general
             _bestDay.value = drinkRepository.getBestDay(30)
             _worstDay.value = drinkRepository.getWorstDay(30)
+            
+            // Load week-specific statistics
+            _weekAverage.value = drinkRepository.getWeekAverage()
+            _weekBestDay.value = drinkRepository.getWeekBestDay()
+            _weekWorstDay.value = drinkRepository.getWeekWorstDay()
+            
+            // Load month-specific statistics
+            _monthAverage.value = drinkRepository.getMonthAverage()
+            _monthBestDay.value = drinkRepository.getMonthBestDay()
+            _monthWorstDay.value = drinkRepository.getMonthWorstDay()
             
             // Load current streak
             val target = dailyTarget.value
             _currentStreak.value = drinkRepository.getCurrentStreak(target)
+        }
+    }
+
+    private fun cleanupOldEntries() {
+        viewModelScope.launch {
+            drinkRepository.cleanupOldEntries()
         }
     }
 
@@ -100,6 +137,8 @@ class MainViewModel(
             drinkRepository.addDrink(amount)
             // Refresh statistics after adding drink
             loadEnhancedStatistics()
+            // Cleanup old entries periodically
+            cleanupOldEntries()
             if (reminderEnabled.value) {
                 // Reschedule with current interval
                 val interval = reminderInterval.value.toLong() * 60 * 1000L
