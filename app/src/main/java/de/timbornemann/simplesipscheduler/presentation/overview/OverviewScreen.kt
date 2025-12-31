@@ -54,16 +54,7 @@ fun OverviewScreen(
         label = "progress_animation"
     )
     
-    // Pulse animation for milestones (50%, 75%, 100%)
-    val isMilestone = clampedProgress >= 0.5f
-    val pulseScale by animateFloatAsState(
-        targetValue = if (isMilestone) 1.1f else 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_animation"
-    )
+    // Removed pulse animation for optimization
     
     // Water drop particles animation when goal is reached
     val goalReached = clampedProgress >= 1f
@@ -149,28 +140,14 @@ fun OverviewScreen(
             )
         }
         
-        // Center content with rounded background
-        Box(
+        // Center content
+        Column(
             modifier = Modifier
                 .size(140.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF1A1A1A).copy(alpha = 0.8f),
-                            Color(0xFF000000).copy(alpha = 0.6f)
-                        )
-                    ),
-                    shape = RoundedCornerShape(70.dp)
-                )
-                .scale(pulseScale)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
                 // Water drop icon
                 Icon(
                     imageVector = Icons.Default.WaterDrop,
@@ -197,7 +174,7 @@ fun OverviewScreen(
                     color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
                 )
             }
-        }
+
         
         // Water drop particles when goal is reached
         if (showParticles && goalReached) {

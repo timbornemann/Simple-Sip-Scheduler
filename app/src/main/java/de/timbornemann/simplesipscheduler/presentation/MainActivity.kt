@@ -8,6 +8,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -85,8 +87,21 @@ fun WearApp(viewModel: MainViewModel) {
             when (page) {
                 0 -> OverviewScreen(viewModel)
                 1 -> QuickDrinkScreen(viewModel)
-                2 -> StatsScreen(viewModel)
-                3 -> SettingsScreen(viewModel)
+                2 -> {
+                    // Lazy load heavy screens
+                    if (pagerState.currentPage == page) {
+                        StatsScreen(viewModel)
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize())
+                    }
+                }
+                3 -> {
+                    if (pagerState.currentPage == page) {
+                        SettingsScreen(viewModel)
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize())
+                    }
+                }
             }
         }
     }
