@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +24,7 @@ class SettingsRepository(private val context: Context) {
         val REMINDER_MODE_KEY = stringPreferencesKey("reminder_mode")
         val QUIET_HOURS_START_KEY = intPreferencesKey("quiet_hours_start")
         val QUIET_HOURS_END_KEY = intPreferencesKey("quiet_hours_end")
+        val NEXT_REMINDER_AT_KEY = longPreferencesKey("next_reminder_at")
 
         const val DEFAULT_TARGET = 2500
         const val DEFAULT_BUTTONS = "100,250,500"
@@ -74,6 +76,11 @@ class SettingsRepository(private val context: Context) {
             }
         }
 
+    val nextReminderAt: Flow<Long?> = context.dataStore.data
+        .map { preferences ->
+            preferences[NEXT_REMINDER_AT_KEY]
+        }
+
     suspend fun setDailyTarget(target: Int) {
         context.dataStore.edit { preferences ->
             preferences[DAILY_TARGET_KEY] = target
@@ -111,6 +118,15 @@ class SettingsRepository(private val context: Context) {
             preferences[REMINDER_MODE_KEY] = mode.name
         }
     }
-}
 
+    suspend fun setNextReminderAt(epochMillis: Long?) {
+        context.dataStore.edit { preferences ->
+            if (epochMillis == null) {
+                preferences.remove(NEXT_REMINDER_AT_KEY)
+            } else {
+                preferences[NEXT_REMINDER_AT_KEY] = epochMillis
+            }
+        }
+    }
+}
 

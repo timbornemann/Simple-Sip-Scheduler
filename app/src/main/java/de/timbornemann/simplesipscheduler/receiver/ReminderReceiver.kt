@@ -13,11 +13,14 @@ import de.timbornemann.simplesipscheduler.presentation.MainActivity
 
 import de.timbornemann.simplesipscheduler.SimpleSipApplication
 import de.timbornemann.simplesipscheduler.data.repository.ReminderMode
+import de.timbornemann.simplesipscheduler.receiver.ReminderTimeCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import java.time.LocalTime
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
 class ReminderReceiver : BroadcastReceiver() {
@@ -72,6 +75,14 @@ class ReminderReceiver : BroadcastReceiver() {
                     
                     // Reschedule
                     ReminderManager.scheduleReminder(context, TimeUnit.MINUTES.toMillis(intervalMinutes.toLong()))
+                    val nextReminder = ReminderTimeCalculator.calculateNextReminderTime(
+                        now = LocalDateTime.now(),
+                        intervalMinutes = intervalMinutes,
+                        quietStartHour = startHour,
+                        quietEndHour = endHour
+                    )
+                    val nextReminderMillis = nextReminder.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    settings.setNextReminderAt(nextReminderMillis)
                 }
             } finally {
                 pendingResult.finish()

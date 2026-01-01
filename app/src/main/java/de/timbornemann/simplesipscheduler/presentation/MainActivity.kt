@@ -22,10 +22,15 @@ import de.timbornemann.simplesipscheduler.presentation.quickdrink.QuickDrinkScre
 import de.timbornemann.simplesipscheduler.presentation.settings.SettingsScreen
 import de.timbornemann.simplesipscheduler.presentation.stats.StatsScreen
 import de.timbornemann.simplesipscheduler.presentation.theme.SimpleSipTheme
+import de.timbornemann.simplesipscheduler.receiver.ReminderManager
 import de.timbornemann.simplesipscheduler.receiver.ReminderReceiver
+import de.timbornemann.simplesipscheduler.receiver.ReminderTimeCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 class MainActivity : ComponentActivity() {
     private var viewModel: MainViewModel? = null
@@ -39,6 +44,27 @@ class MainActivity : ComponentActivity() {
                     app?.let {
                         CoroutineScope(Dispatchers.IO).launch {
                             it.drinkRepository.addDrink(amount)
+                            val settings = it.settingsRepository
+                            val reminderEnabled = settings.reminderEnabled.first()
+                            if (reminderEnabled) {
+                                val intervalMinutes = settings.reminderInterval.first()
+                                ReminderManager.scheduleReminder(
+                                    it,
+                                    intervalMinutes.toLong() * 60 * 1000L
+                                )
+                                val startHour = settings.quietHoursStart.first()
+                                val endHour = settings.quietHoursEnd.first()
+                                val nextReminder = ReminderTimeCalculator.calculateNextReminderTime(
+                                    now = LocalDateTime.now(),
+                                    intervalMinutes = intervalMinutes,
+                                    quietStartHour = startHour,
+                                    quietEndHour = endHour
+                                )
+                                val nextReminderMillis = nextReminder.atZone(ZoneId.systemDefault())
+                                    .toInstant()
+                                    .toEpochMilli()
+                                settings.setNextReminderAt(nextReminderMillis)
+                            }
                         }
                     }
                 }
