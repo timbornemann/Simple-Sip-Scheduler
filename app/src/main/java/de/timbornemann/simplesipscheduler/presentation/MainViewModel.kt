@@ -8,6 +8,7 @@ import de.timbornemann.simplesipscheduler.data.database.DrinkEntry
 import de.timbornemann.simplesipscheduler.data.repository.DrinkRepository
 import de.timbornemann.simplesipscheduler.data.repository.SettingsRepository
 import de.timbornemann.simplesipscheduler.receiver.ReminderManager
+import de.timbornemann.simplesipscheduler.receiver.ReminderTimeCalculator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import de.timbornemann.simplesipscheduler.data.database.DaySum
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 class MainViewModel(
     private val application: Application,
@@ -55,6 +58,9 @@ class MainViewModel(
 
     val reminderMode = settingsRepository.reminderMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsRepository.DEFAULT_REMINDER_MODE)
+
+    val nextReminderAt = settingsRepository.nextReminderAt
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // Enhanced Statistics - General (30 days)
     private val _averageDaily = MutableStateFlow<Int?>(null)
@@ -141,8 +147,7 @@ class MainViewModel(
             cleanupOldEntries()
             if (reminderEnabled.value) {
                 // Reschedule with current interval
-                val interval = reminderInterval.value.toLong() * 60 * 1000L
-                ReminderManager.scheduleReminder(application, interval)
+                scheduleReminderWithNextTime(reminderInterval.value)
             }
         }
     }
@@ -151,8 +156,7 @@ class MainViewModel(
          viewModelScope.launch {
             settingsRepository.setReminderInterval(minutes)
              if (reminderEnabled.value) {
-                val interval = minutes.toLong() * 60 * 1000L
-                ReminderManager.scheduleReminder(application, interval)
+                scheduleReminderWithNextTime(minutes)
             }
         }
     }
@@ -196,14 +200,15 @@ class MainViewModel(
                 if (enabled) {
                     // Get the interval from the repository to ensure we have the latest value
                     val intervalMinutes = settingsRepository.reminderInterval.first()
-                    val interval = intervalMinutes.toLong() * 60 * 1000L
-                    ReminderManager.scheduleReminder(application, interval)
+                    scheduleReminderWithNextTime(intervalMinutes)
                 } else {
                     ReminderManager.cancelReminder(application)
+                    settingsRepository.setNextReminderAt(null)
                 }
             } catch (e: Exception) {
                 // If scheduling fails, disable the reminder setting
                 settingsRepository.setReminderEnabled(false)
+                settingsRepository.setNextReminderAt(null)
             }
         }
     }
@@ -212,6 +217,19 @@ class MainViewModel(
         viewModelScope.launch {
             settingsRepository.setReminderMode(mode)
         }
+    }
+
+    private suspend fun scheduleReminderWithNextTime(intervalMinutes: Int) {
+        val intervalMs = intervalMinutes.toLong() * 60 * 1000L
+        ReminderManager.scheduleReminder(application, intervalMs)
+        val nextReminder = ReminderTimeCalculator.calculateNextReminderTime(
+            now = LocalDateTime.now(),
+            intervalMinutes = intervalMinutes,
+            quietStartHour = quietHoursStart.value,
+            quietEndHour = quietHoursEnd.value
+        )
+        val nextReminderMillis = nextReminder.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        settingsRepository.setNextReminderAt(nextReminderMillis)
     }
 }
 

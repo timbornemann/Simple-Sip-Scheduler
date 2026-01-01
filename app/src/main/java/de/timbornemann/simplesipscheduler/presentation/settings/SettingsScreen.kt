@@ -39,6 +39,9 @@ import de.timbornemann.simplesipscheduler.presentation.MainViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun SettingsScreen(
@@ -52,6 +55,8 @@ fun SettingsScreen(
     val quietHoursEnd by viewModel.quietHoursEnd.collectAsState()
     val reminderMode by viewModel.reminderMode.collectAsState()
     val buttonConfig by viewModel.buttonConfig.collectAsState()
+    val nextReminderAt by viewModel.nextReminderAt.collectAsState()
+    val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     
     ScalingLazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -135,6 +140,24 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+        item {
+            Text("Next Reminder", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(top = 8.dp))
+        }
+        item {
+            val nextReminderText = if (!reminderEnabled || nextReminderAt == null) {
+                "Disabled"
+            } else {
+                val time = Instant.ofEpochMilli(nextReminderAt!!)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalTime()
+                timeFormatter.format(time)
+            }
+            Text(
+                text = nextReminderText,
+                style = MaterialTheme.typography.caption2,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
         if (reminderEnabled) {
             // Reminder Mode
             item {
@@ -180,7 +203,7 @@ fun SettingsScreen(
                     // Minus Button (links)
                     Button(
                         onClick = { 
-                            val newInterval = (reminderInterval - 30).coerceAtLeast(30)
+                            val newInterval = (reminderInterval - 5).coerceAtLeast(5)
                             viewModel.setReminderInterval(newInterval)
                         },
                         colors = ButtonDefaults.secondaryButtonColors(),
@@ -200,7 +223,7 @@ fun SettingsScreen(
                     // Plus Button (rechts)
                     Button(
                         onClick = { 
-                            val newInterval = (reminderInterval + 30).coerceAtMost(240)
+                            val newInterval = (reminderInterval + 5).coerceAtMost(240)
                             viewModel.setReminderInterval(newInterval)
                         },
                         colors = ButtonDefaults.secondaryButtonColors(),
