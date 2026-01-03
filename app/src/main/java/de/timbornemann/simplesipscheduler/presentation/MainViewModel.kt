@@ -101,6 +101,7 @@ class MainViewModel(
     init {
         loadEnhancedStatistics()
         cleanupOldEntries()
+        ensureReminderSchedule()
     }
 
     private fun loadEnhancedStatistics() {
@@ -131,6 +132,22 @@ class MainViewModel(
     private fun cleanupOldEntries() {
         viewModelScope.launch {
             drinkRepository.cleanupOldEntries()
+        }
+    }
+
+    private fun ensureReminderSchedule() {
+        viewModelScope.launch {
+            val enabled = settingsRepository.reminderEnabled.first()
+            if (!enabled) {
+                return@launch
+            }
+
+            val nextReminderAt = settingsRepository.nextReminderAt.first()
+            val nowMillis = System.currentTimeMillis()
+            if (nextReminderAt == null || nextReminderAt <= nowMillis) {
+                val intervalMinutes = settingsRepository.reminderInterval.first()
+                scheduleReminderWithNextTime(intervalMinutes)
+            }
         }
     }
 
@@ -220,8 +237,6 @@ class MainViewModel(
     }
 
     private suspend fun scheduleReminderWithNextTime(intervalMinutes: Int) {
-        val intervalMs = intervalMinutes.toLong() * 60 * 1000L
-        ReminderManager.scheduleReminder(application, intervalMs)
         val nextReminder = ReminderTimeCalculator.calculateNextReminderTime(
             now = LocalDateTime.now(),
             intervalMinutes = intervalMinutes,
@@ -229,6 +244,8 @@ class MainViewModel(
             quietEndHour = quietHoursEnd.value
         )
         val nextReminderMillis = nextReminder.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val delayMs = (nextReminderMillis - System.currentTimeMillis()).coerceAtLeast(0)
+        ReminderManager.scheduleReminder(application, delayMs)
         settingsRepository.setNextReminderAt(nextReminderMillis)
     }
 }

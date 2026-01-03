@@ -7,7 +7,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.SystemClock
 import android.util.Log
-import java.util.concurrent.TimeUnit
 
 object ReminderManager {
     private const val REQUEST_CODE = 1001
@@ -37,11 +36,29 @@ object ReminderManager {
             
             // Use setAndAllowWhileIdle for battery efficiency.
             // This is inexact (system can batch it) but ensures it fires even in Doze mode.
-            alarmManager.setAndAllowWhileIdle(
-                AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                triggerAtMillis,
-                pendingIntent
-            )
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms() -> {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                    )
+                }
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                    )
+                }
+                else -> {
+                    alarmManager.setExact(
+                        AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                    )
+                }
+            }
             Log.d(TAG, "Reminder scheduled for ~${delayMs}ms from now")
         } catch (e: Exception) {
             Log.e(TAG, "Error scheduling reminder", e)

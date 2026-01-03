@@ -1,10 +1,13 @@
 package de.timbornemann.simplesipscheduler.presentation
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -48,10 +51,6 @@ class MainActivity : ComponentActivity() {
                             val reminderEnabled = settings.reminderEnabled.first()
                             if (reminderEnabled) {
                                 val intervalMinutes = settings.reminderInterval.first()
-                                ReminderManager.scheduleReminder(
-                                    it,
-                                    intervalMinutes.toLong() * 60 * 1000L
-                                )
                                 val startHour = settings.quietHoursStart.first()
                                 val endHour = settings.quietHoursEnd.first()
                                 val nextReminder = ReminderTimeCalculator.calculateNextReminderTime(
@@ -63,6 +62,8 @@ class MainActivity : ComponentActivity() {
                                 val nextReminderMillis = nextReminder.atZone(ZoneId.systemDefault())
                                     .toInstant()
                                     .toEpochMilli()
+                                val delayMs = (nextReminderMillis - System.currentTimeMillis()).coerceAtLeast(0)
+                                ReminderManager.scheduleReminder(it, delayMs)
                                 settings.setNextReminderAt(nextReminderMillis)
                             }
                         }
@@ -75,6 +76,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        requestNotificationPermissionIfNeeded()
         setContent {
             val app = application as SimpleSipApplication
             viewModel = viewModel(
@@ -99,6 +101,14 @@ class MainActivity : ComponentActivity() {
             unregisterReceiver(quickActionReceiver)
         } catch (e: Exception) {
             // Receiver might not be registered
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100)
+            }
         }
     }
 }
