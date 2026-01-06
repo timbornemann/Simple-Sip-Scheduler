@@ -1,6 +1,5 @@
 package de.timbornemann.simplesipscheduler.receiver
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -21,7 +20,6 @@ import kotlinx.coroutines.flow.first
 import java.time.LocalTime
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.concurrent.TimeUnit
 
 class ReminderReceiver : BroadcastReceiver() {
     companion object {
@@ -73,8 +71,6 @@ class ReminderReceiver : BroadcastReceiver() {
                         }
                     }
                     
-                    // Reschedule
-                    ReminderManager.scheduleReminder(context, TimeUnit.MINUTES.toMillis(intervalMinutes.toLong()))
                     val nextReminder = ReminderTimeCalculator.calculateNextReminderTime(
                         now = LocalDateTime.now(),
                         intervalMinutes = intervalMinutes,
@@ -82,6 +78,9 @@ class ReminderReceiver : BroadcastReceiver() {
                         quietEndHour = endHour
                     )
                     val nextReminderMillis = nextReminder.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    val delayMs = (nextReminderMillis - System.currentTimeMillis()).coerceAtLeast(0)
+                    // Reschedule
+                    ReminderManager.scheduleReminder(context, delayMs)
                     settings.setNextReminderAt(nextReminderMillis)
                 }
             } finally {
@@ -97,9 +96,11 @@ class ReminderReceiver : BroadcastReceiver() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             "Trink-Erinnerungen",
-            NotificationManager.IMPORTANCE_DEFAULT
+            NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = "Erinnerung Wasser zu trinken"
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 250, 250, 250)
         }
         notificationManager.createNotificationChannel(channel)
 
@@ -138,7 +139,7 @@ class ReminderReceiver : BroadcastReceiver() {
             .setSmallIcon(android.R.drawable.ic_dialog_info) 
             .setContentTitle("Zeit zu trinken!")
             .setContentText("$progress / $target ml")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .addAction(android.R.drawable.ic_input_add, "+100ml", actionIntents[0])
@@ -160,8 +161,11 @@ class ReminderReceiver : BroadcastReceiver() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             "Trink-Erinnerungen",
-            NotificationManager.IMPORTANCE_DEFAULT
-        )
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 250, 250, 250)
+        }
         notificationManager.createNotificationChannel(channel)
         
         val launchIntent = Intent(context, MainActivity::class.java)
@@ -183,7 +187,7 @@ class ReminderReceiver : BroadcastReceiver() {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(message)
             .setContentText("$progress ml von $target ml getrunken")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
