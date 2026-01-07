@@ -3,21 +3,30 @@ package de.timbornemann.simplesipscheduler.data.repository
 import de.timbornemann.simplesipscheduler.data.database.DrinkDao
 import de.timbornemann.simplesipscheduler.data.database.DrinkEntry
 import de.timbornemann.simplesipscheduler.data.database.DaySum
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.math.max
 
 class DrinkRepository(private val drinkDao: DrinkDao) {
     
     fun getTodayProgress(): Flow<Int?> {
-        val (start, end) = getDayRange(LocalDate.now())
-        return drinkDao.getTotalForDay(start, end)
+        return dayChangeFlow().flatMapLatest { date ->
+            val (start, end) = getDayRange(date)
+            drinkDao.getTotalForDay(start, end)
+        }
     }
 
     fun getTodayEntries(): Flow<List<DrinkEntry>> {
-        val (start, end) = getDayRange(LocalDate.now())
-        return drinkDao.getEntriesForDay(start, end)
+        return dayChangeFlow().flatMapLatest { date ->
+            val (start, end) = getDayRange(date)
+            drinkDao.getEntriesForDay(start, end)
+        }
     }
 
     suspend fun addDrink(amountMl: Int) {
@@ -41,6 +50,19 @@ class DrinkRepository(private val drinkDao: DrinkDao) {
         val start = date.atStartOfDay(zoneId).toInstant().toEpochMilli()
         val end = date.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
         return start to end
+    }
+
+    private fun dayChangeFlow(): Flow<LocalDate> {
+        val zoneId = ZoneId.systemDefault()
+        return flow {
+            while (true) {
+                val today = LocalDate.now()
+                emit(today)
+                val nextMidnight = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+                val delayMillis = max(0, nextMidnight - System.currentTimeMillis())
+                delay(delayMillis)
+            }
+        }.distinctUntilChanged()
     }
 
     fun getWeekStats(): Flow<List<de.timbornemann.simplesipscheduler.data.database.DaySum>> {
