@@ -25,6 +25,10 @@ interface DrinkDao {
     @Query("SELECT SUM(amountMl) FROM drink_entries WHERE timestamp >= :startOfDay AND timestamp < :endOfDay")
     fun getTotalForDay(startOfDay: Long, endOfDay: Long): Flow<Int?>
     
+    // Direct query for tiles/complications (non-flow)
+    @Query("SELECT SUM(amountMl) FROM drink_entries WHERE timestamp >= :startOfDay AND timestamp < :endOfDay")
+    suspend fun getTotalForDayDirect(startOfDay: Long, endOfDay: Long): Int?
+    
     @Query("SELECT * FROM drink_entries ORDER BY timestamp DESC LIMIT :limit")
     fun getRecentEntries(limit: Int): Flow<List<DrinkEntry>>
 

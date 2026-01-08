@@ -21,6 +21,16 @@ class DrinkRepository(private val drinkDao: DrinkDao) {
             drinkDao.getTotalForDay(start, end)
         }
     }
+    
+    /**
+     * Direct query to get today's progress (for tiles/complications).
+     * This is a suspend function that returns the current value immediately.
+     */
+    suspend fun getTodayProgressDirect(): Int {
+        val today = LocalDate.now()
+        val (start, end) = getDayRange(today)
+        return drinkDao.getTotalForDayDirect(start, end) ?: 0
+    }
 
     fun getTodayEntries(): Flow<List<DrinkEntry>> {
         return dayChangeFlow().flatMapLatest { date ->

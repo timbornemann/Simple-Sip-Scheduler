@@ -27,6 +27,10 @@ class BootReceiver : BroadcastReceiver() {
             
             Log.d(TAG, "Boot completed, checking reminder schedule")
             
+            // Always schedule midnight alarm for day change updates
+            MidnightReceiver.scheduleMidnightAlarm(context)
+            Log.d(TAG, "Midnight alarm scheduled")
+            
             val pendingResult = goAsync()
             val app = context.applicationContext as SimpleSipApplication
             

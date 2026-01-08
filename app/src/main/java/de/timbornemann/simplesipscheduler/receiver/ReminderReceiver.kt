@@ -25,8 +25,6 @@ class ReminderReceiver : BroadcastReceiver() {
     companion object {
         const val CHANNEL_ID = "drink_reminder_channel"
         const val NOTIFICATION_ID = 1
-        const val ACTION_ADD_DRINK = "de.timbornemann.simplesipscheduler.ACTION_ADD_DRINK"
-        const val EXTRA_AMOUNT = "amount"
         private const val TAG = "ReminderReceiver"
     }
 
@@ -155,34 +153,16 @@ class ReminderReceiver : BroadcastReceiver() {
             app.settingsRepository.dailyTarget.first()
         }
         
-        // Create quick action intents
-        val actionAmounts = listOf(100, 250, 500)
-        val actionIntents = actionAmounts.mapIndexed { index, amount ->
-            val actionIntent = Intent(ACTION_ADD_DRINK).apply {
-                setPackage(context.packageName)
-                putExtra(EXTRA_AMOUNT, amount)
-            }
-            PendingIntent.getBroadcast(
-                context,
-                index + 100, // Unique request codes
-                actionIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
-        
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_water_drop) 
             .setContentTitle("Zeit zu trinken!")
             .setContentText("$progress / $target ml")
-            .setPriority(NotificationCompat.PRIORITY_MAX) // Max priority for AOD interruption
-            .setCategory(NotificationCompat.CATEGORY_ALARM) // Alarm category for AOD
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .addAction(android.R.drawable.ic_input_add, "+100ml", actionIntents[0])
-            .addAction(android.R.drawable.ic_input_add, "+250ml", actionIntents[1])
-            .addAction(android.R.drawable.ic_input_add, "+500ml", actionIntents[2])
             .build()
 
         notificationManager.notify(NOTIFICATION_ID, notification)

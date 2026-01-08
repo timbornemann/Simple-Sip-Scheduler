@@ -1,5 +1,6 @@
 package de.timbornemann.simplesipscheduler.tile
 
+import android.content.ComponentName
 import android.content.Context
 import androidx.wear.protolayout.ColorBuilders.argb
 import androidx.wear.protolayout.ActionBuilders
@@ -19,11 +20,17 @@ import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.tooling.preview.Preview
 import androidx.wear.tiles.tooling.preview.TilePreviewData
 import androidx.wear.tooling.preview.devices.WearDevices
+import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.tiles.SuspendingTileService
 import de.timbornemann.simplesipscheduler.SimpleSipApplication
+import de.timbornemann.simplesipscheduler.complication.MainComplicationService
 import de.timbornemann.simplesipscheduler.presentation.MainActivity
+import de.timbornemann.simplesipscheduler.receiver.ReminderManager
+import de.timbornemann.simplesipscheduler.receiver.ReminderTimeCalculator
 import kotlinx.coroutines.flow.first
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 private const val RESOURCES_VERSION = "1"
 private const val ID_ADD_50 = "add_50"
@@ -42,12 +49,48 @@ class MainTileService : SuspendingTileService() {
         val app = applicationContext as SimpleSipApplication
         
         // Handle Quick Drink Clicks
-        when (requestParams.state?.lastClickableId) {
-            ID_ADD_50 -> app.drinkRepository.addDrink(50)
-            ID_SUBTRACT_50 -> app.drinkRepository.addDrink(-50)
+        val clickedId = requestParams.state?.lastClickableId
+        if (clickedId == ID_ADD_50 || clickedId == ID_SUBTRACT_50) {
+            val amount = if (clickedId == ID_ADD_50) 50 else -50
+            
+            // Add drink and wait for it to complete
+            app.drinkRepository.addDrink(amount)
+            
+            // Reschedule reminder if enabled
+            val reminderEnabled = app.settingsRepository.reminderEnabled.first()
+            if (reminderEnabled) {
+                val intervalMinutes = app.settingsRepository.reminderInterval.first()
+                val startHour = app.settingsRepository.quietHoursStart.first()
+                val endHour = app.settingsRepository.quietHoursEnd.first()
+                
+                val nextReminder = ReminderTimeCalculator.calculateNextReminderTime(
+                    now = LocalDateTime.now(),
+                    intervalMinutes = intervalMinutes,
+                    quietStartHour = startHour,
+                    quietEndHour = endHour
+                )
+                val nextReminderMillis = nextReminder.atZone(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli()
+                val delayMs = (nextReminderMillis - System.currentTimeMillis()).coerceAtLeast(0)
+                
+                ReminderManager.scheduleReminder(this, delayMs)
+                app.settingsRepository.setNextReminderAt(nextReminderMillis)
+            }
+            
+            // Update complication
+            try {
+                ComplicationDataSourceUpdateRequester.create(
+                    this,
+                    ComponentName(this, MainComplicationService::class.java)
+                ).requestUpdateAll()
+            } catch (e: Exception) {
+                // Ignore if complication update fails
+            }
         }
 
-        val progress = app.drinkRepository.getTodayProgress().first() ?: 0
+        // Use direct query to get fresh data after insert
+        val progress = app.drinkRepository.getTodayProgressDirect()
         val target = app.settingsRepository.dailyTarget.first()
         
         return tile(requestParams, this, progress, target)
@@ -93,6 +136,8 @@ private fun tile(
     return TileBuilders.Tile.Builder()
         .setResourcesVersion(RESOURCES_VERSION)
         .setTileTimeline(singleTileTimeline)
+        // Refresh tile every 30 minutes to ensure day change is detected
+        .setFreshnessIntervalMillis(30 * 60 * 1000L)
         .build()
 }
 

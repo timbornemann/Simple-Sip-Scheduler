@@ -34,7 +34,7 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
     }
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
-        val progress = drinkRepository.getTodayProgress().first() ?: 0
+        val progress = drinkRepository.getTodayProgressDirect()
         val target = settingsRepository.dailyTarget.first()
 
         return when (request.complicationType) {
