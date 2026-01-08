@@ -248,6 +248,21 @@ class MainViewModel(
         ReminderManager.scheduleReminder(application, delayMs)
         settingsRepository.setNextReminderAt(nextReminderMillis)
     }
+
+    suspend fun checkSchedule() {
+        val enabled = settingsRepository.reminderEnabled.first()
+        if (!enabled) {
+            return
+        }
+
+        val nextReminderAt = settingsRepository.nextReminderAt.first()
+        val nowMillis = System.currentTimeMillis()
+        // If next reminder is in the past or not set, reschedule
+        if (nextReminderAt == null || nextReminderAt <= nowMillis) {
+            val intervalMinutes = settingsRepository.reminderInterval.first()
+            scheduleReminderWithNextTime(intervalMinutes)
+        }
+    }
 }
 
 class MainViewModelFactory(

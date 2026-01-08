@@ -34,35 +34,71 @@ object ReminderManager {
             // Set new alarm
             val triggerAtMillis = SystemClock.elapsedRealtime() + delayMs
             
-            // Use setAndAllowWhileIdle for battery efficiency.
-            // This is inexact (system can batch it) but ensures it fires even in Doze mode.
+            Log.d(TAG, "Scheduling reminder: delayMs=$delayMs, triggerAt=$triggerAtMillis")
+            
+            // Check if we can schedule exact alarms (required for Android 12+)
+            val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                alarmManager.canScheduleExactAlarms()
+            } else {
+                true
+            }
+            
+            Log.d(TAG, "canScheduleExact=$canScheduleExact, SDK=${Build.VERSION.SDK_INT}")
+            
             when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms() -> {
+                // Android 12+ with exact alarm permission
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && canScheduleExact -> {
                     alarmManager.setExactAndAllowWhileIdle(
                         AlarmManager.ELAPSED_REALTIME_WAKEUP,
                         triggerAtMillis,
                         pendingIntent
                     )
+                    Log.d(TAG, "Scheduled exact alarm (Android 12+)")
                 }
+                // Android 12+ WITHOUT exact alarm permission - use inexact alarm as fallback
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                    )
+                    Log.w(TAG, "Scheduled INEXACT alarm (no exact alarm permission)")
+                }
+                // Android 6-11: can use exact alarms without special permission
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
                     alarmManager.setExactAndAllowWhileIdle(
                         AlarmManager.ELAPSED_REALTIME_WAKEUP,
                         triggerAtMillis,
                         pendingIntent
                     )
+                    Log.d(TAG, "Scheduled exact alarm (Android 6-11)")
                 }
+                // Older Android versions
                 else -> {
                     alarmManager.setExact(
                         AlarmManager.ELAPSED_REALTIME_WAKEUP,
                         triggerAtMillis,
                         pendingIntent
                     )
+                    Log.d(TAG, "Scheduled exact alarm (legacy)")
                 }
             }
             Log.d(TAG, "Reminder scheduled for ~${delayMs}ms from now")
         } catch (e: Exception) {
             Log.e(TAG, "Error scheduling reminder", e)
         }
+    }
+    
+    /**
+     * Check if exact alarms can be scheduled.
+     * Returns true if on Android 11 or below, or if permission is granted on Android 12+.
+     */
+    fun canScheduleExactAlarms(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return true
+        }
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+        return alarmManager?.canScheduleExactAlarms() ?: false
     }
 
     fun cancelReminder(context: Context) {

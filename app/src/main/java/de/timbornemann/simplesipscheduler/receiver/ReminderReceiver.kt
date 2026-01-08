@@ -27,16 +27,29 @@ class ReminderReceiver : BroadcastReceiver() {
         const val NOTIFICATION_ID = 1
         const val ACTION_ADD_DRINK = "de.timbornemann.simplesipscheduler.ACTION_ADD_DRINK"
         const val EXTRA_AMOUNT = "amount"
+        private const val TAG = "ReminderReceiver"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
+        android.util.Log.d(TAG, "onReceive called! Intent action: ${intent.action}")
+        
         val pendingResult = goAsync()
         val app = context.applicationContext as SimpleSipApplication
         
+        // Acquire WakeLock to ensure device stays awake for processing
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        val wakeLock = powerManager.newWakeLock(
+            android.os.PowerManager.PARTIAL_WAKE_LOCK,
+            "SimpleSipScheduler:ReminderWakeLock"
+        )
+        wakeLock.acquire(10 * 1000L) // 10 seconds timeout
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val settings = app.settingsRepository
                 val enabled = settings.reminderEnabled.first()
+                
+                android.util.Log.d(TAG, "Reminder enabled: $enabled")
                 
                 if (enabled) {
                     val intervalMinutes = settings.reminderInterval.first()
@@ -47,12 +60,16 @@ class ReminderReceiver : BroadcastReceiver() {
                     val now = LocalTime.now()
                     val currentHour = now.hour
                     
+                    android.util.Log.d(TAG, "Current hour: $currentHour, Quiet hours: $startHour-$endHour")
+                    
                     // Simple quiet hours check (assuming start < end for day interval, or start > end for night interval)
                     val isQuietTime = if (startHour < endHour) {
                          currentHour in startHour until endHour
                     } else {
                          currentHour >= startHour || currentHour < endHour
                     }
+
+                    android.util.Log.d(TAG, "Is quiet time: $isQuietTime")
 
                     if (!isQuietTime) {
                         // Check reminder mode
@@ -62,13 +79,20 @@ class ReminderReceiver : BroadcastReceiver() {
                                 // Check if progress is under target
                                 val progress = app.drinkRepository.getTodayProgress().first() ?: 0
                                 val target = settings.dailyTarget.first()
+                                android.util.Log.d(TAG, "Progress: $progress, Target: $target")
                                 progress < target
                             }
                         }
                         
+                        android.util.Log.d(TAG, "Should show notification: $shouldShow (mode: $reminderMode)")
+                        
                         if (shouldShow) {
+                            android.util.Log.d(TAG, "Showing notification...")
                             showNotification(context, app)
+                            android.util.Log.d(TAG, "Notification shown!")
                         }
+                    } else {
+                        android.util.Log.d(TAG, "Skipping notification due to quiet hours")
                     }
                     
                     val nextReminder = ReminderTimeCalculator.calculateNextReminderTime(
@@ -79,11 +103,21 @@ class ReminderReceiver : BroadcastReceiver() {
                     )
                     val nextReminderMillis = nextReminder.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
                     val delayMs = (nextReminderMillis - System.currentTimeMillis()).coerceAtLeast(0)
+                    
+                    android.util.Log.d(TAG, "Rescheduling next reminder in ${delayMs}ms (at $nextReminder)")
+                    
                     // Reschedule
                     ReminderManager.scheduleReminder(context, delayMs)
                     settings.setNextReminderAt(nextReminderMillis)
+                } else {
+                    android.util.Log.d(TAG, "Reminders disabled, not processing")
                 }
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "Error in ReminderReceiver", e)
             } finally {
+                if (wakeLock.isHeld) {
+                    wakeLock.release()
+                }
                 pendingResult.finish()
             }
         }
@@ -100,7 +134,8 @@ class ReminderReceiver : BroadcastReceiver() {
         ).apply {
             description = "Erinnerung Wasser zu trinken"
             enableVibration(true)
-            vibrationPattern = longArrayOf(0, 250, 250, 250)
+            vibrationPattern = longArrayOf(0, 500, 200, 500) // Stronger vibration
+            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
         }
         notificationManager.createNotificationChannel(channel)
 
@@ -136,12 +171,15 @@ class ReminderReceiver : BroadcastReceiver() {
         }
         
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) 
+            .setSmallIcon(R.drawable.ic_water_drop) 
             .setContentTitle("Zeit zu trinken!")
             .setContentText("$progress / $target ml")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX) // Max priority for AOD interruption
+            .setCategory(NotificationCompat.CATEGORY_ALARM) // Alarm category for AOD
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .addAction(android.R.drawable.ic_input_add, "+100ml", actionIntents[0])
             .addAction(android.R.drawable.ic_input_add, "+250ml", actionIntents[1])
             .addAction(android.R.drawable.ic_input_add, "+500ml", actionIntents[2])

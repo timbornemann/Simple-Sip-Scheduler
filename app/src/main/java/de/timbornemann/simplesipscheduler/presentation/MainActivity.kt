@@ -93,6 +93,13 @@ class MainActivity : ComponentActivity() {
             addCategory(Intent.CATEGORY_DEFAULT)
         }
         registerReceiver(quickActionReceiver, filter, Context.RECEIVER_EXPORTED)
+        
+        // Check schedule on resume to ensure alarm is set
+        viewModel?.let { vm ->
+            CoroutineScope(Dispatchers.IO).launch {
+                vm.checkSchedule()
+            }
+        }
     }
 
     override fun onPause() {

@@ -203,7 +203,11 @@ fun SettingsScreen(
                     // Minus Button (links)
                     Button(
                         onClick = { 
-                            val newInterval = (reminderInterval - 5).coerceAtLeast(5)
+                            val newInterval = if (reminderInterval <= 5) {
+                                (reminderInterval - 1).coerceAtLeast(1)
+                            } else {
+                                (reminderInterval - 5).coerceAtLeast(5)
+                            }
                             viewModel.setReminderInterval(newInterval)
                         },
                         colors = ButtonDefaults.secondaryButtonColors(),
@@ -223,7 +227,11 @@ fun SettingsScreen(
                     // Plus Button (rechts)
                     Button(
                         onClick = { 
-                            val newInterval = (reminderInterval + 5).coerceAtMost(240)
+                            val newInterval = if (reminderInterval < 5) {
+                                (reminderInterval + 1).coerceAtMost(5)
+                            } else {
+                                (reminderInterval + 5).coerceAtMost(240)
+                            }
                             viewModel.setReminderInterval(newInterval)
                         },
                         colors = ButtonDefaults.secondaryButtonColors(),
