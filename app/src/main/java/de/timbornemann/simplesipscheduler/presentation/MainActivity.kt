@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Build
 import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
@@ -14,8 +15,11 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.health.connect.client.permission.PermissionController
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.timbornemann.simplesipscheduler.SimpleSipApplication
+import de.timbornemann.simplesipscheduler.data.health.HealthConnectManager
 import de.timbornemann.simplesipscheduler.presentation.overview.OverviewScreen
 import de.timbornemann.simplesipscheduler.presentation.quickdrink.QuickDrinkScreen
 import de.timbornemann.simplesipscheduler.presentation.settings.SettingsScreen
@@ -27,15 +31,29 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private var viewModel: MainViewModel? = null
+    private lateinit var healthConnectPermissionLauncher: ActivityResultLauncher<Set<String>>
+    private lateinit var healthConnectManager: HealthConnectManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
+        val app = application as SimpleSipApplication
+        healthConnectManager = app.healthConnectManager
+        healthConnectPermissionLauncher = registerForActivityResult(
+            PermissionController.createRequestPermissionResultContract()
+        ) { _ ->
+            // No-op, UI will update based on granted permissions.
+        }
+        requestHealthConnectPermissionsIfNeeded()
         setContent {
-            val app = application as SimpleSipApplication
             viewModel = viewModel(
-                factory = MainViewModelFactory(app, app.drinkRepository, app.settingsRepository)
+                factory = MainViewModelFactory(
+                    app,
+                    app.drinkRepository,
+                    app.settingsRepository,
+                    app.healthConnectManager
+                )
             )
             
             WearApp(viewModel!!)
@@ -56,6 +74,18 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100)
+            }
+        }
+    }
+
+    private fun requestHealthConnectPermissionsIfNeeded() {
+        if (!healthConnectManager.isAvailable()) {
+            return
+        }
+        lifecycleScope.launch {
+            val granted = healthConnectManager.hasHydrationPermissions()
+            if (!granted) {
+                healthConnectPermissionLauncher.launch(healthConnectManager.hydrationPermissions)
             }
         }
     }

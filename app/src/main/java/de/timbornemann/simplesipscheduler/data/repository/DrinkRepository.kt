@@ -39,9 +39,9 @@ class DrinkRepository(private val drinkDao: DrinkDao) {
         }
     }
 
-    suspend fun addDrink(amountMl: Int) {
+    suspend fun addDrink(amountMl: Int, timestamp: Long = System.currentTimeMillis()) {
         val entry = DrinkEntry(
-            timestamp = System.currentTimeMillis(),
+            timestamp = timestamp,
             amountMl = amountMl
         )
         drinkDao.insert(entry)

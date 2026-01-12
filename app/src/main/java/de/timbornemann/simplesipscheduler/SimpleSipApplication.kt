@@ -6,6 +6,7 @@ import androidx.wear.tiles.TileService
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
 import de.timbornemann.simplesipscheduler.complication.MainComplicationService
 import de.timbornemann.simplesipscheduler.data.database.DrinkDatabase
+import de.timbornemann.simplesipscheduler.data.health.HealthConnectManager
 import de.timbornemann.simplesipscheduler.data.repository.DrinkRepository
 import de.timbornemann.simplesipscheduler.data.repository.SettingsRepository
 import de.timbornemann.simplesipscheduler.receiver.MidnightReceiver
@@ -19,6 +20,7 @@ class SimpleSipApplication : Application() {
     val database by lazy { DrinkDatabase.getDatabase(this) }
     val drinkRepository by lazy { DrinkRepository(database.drinkDao()) }
     val settingsRepository by lazy { SettingsRepository(this) }
+    val healthConnectManager by lazy { HealthConnectManager(this) }
     
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
