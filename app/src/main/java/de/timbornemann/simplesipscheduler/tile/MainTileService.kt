@@ -52,9 +52,13 @@ class MainTileService : SuspendingTileService() {
         val clickedId = requestParams.state?.lastClickableId
         if (clickedId == ID_ADD_50 || clickedId == ID_SUBTRACT_50) {
             val amount = if (clickedId == ID_ADD_50) 50 else -50
+            val timestamp = System.currentTimeMillis()
             
             // Add drink and wait for it to complete
-            app.drinkRepository.addDrink(amount)
+            app.drinkRepository.addDrink(amount, timestamp)
+            runCatching {
+                app.healthConnectManager.writeHydrationIfPermitted(amount, timestamp)
+            }
             
             // Reschedule reminder if enabled
             val reminderEnabled = app.settingsRepository.reminderEnabled.first()

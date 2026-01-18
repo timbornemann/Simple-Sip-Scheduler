@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import de.timbornemann.simplesipscheduler.data.database.DrinkEntry
 import de.timbornemann.simplesipscheduler.data.repository.DrinkRepository
 import de.timbornemann.simplesipscheduler.data.repository.SettingsRepository
+import de.timbornemann.simplesipscheduler.data.health.HealthConnectManager
 import de.timbornemann.simplesipscheduler.receiver.ReminderManager
 import de.timbornemann.simplesipscheduler.receiver.ReminderTimeCalculator
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,7 +24,8 @@ import java.time.ZoneId
 class MainViewModel(
     private val application: Application,
     private val drinkRepository: DrinkRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val healthConnectManager: HealthConnectManager
 ) : ViewModel() {
 
     val dailyTarget = settingsRepository.dailyTarget
@@ -157,7 +159,11 @@ class MainViewModel(
 
     fun addDrink(amount: Int) {
         viewModelScope.launch {
-            drinkRepository.addDrink(amount)
+            val timestamp = System.currentTimeMillis()
+            drinkRepository.addDrink(amount, timestamp)
+            runCatching {
+                healthConnectManager.writeHydrationIfPermitted(amount, timestamp)
+            }
             // Refresh statistics after adding drink
             loadEnhancedStatistics()
             // Cleanup old entries periodically
@@ -268,12 +274,18 @@ class MainViewModel(
 class MainViewModelFactory(
     private val application: Application,
     private val drinkRepository: DrinkRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val healthConnectManager: HealthConnectManager
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(application, drinkRepository, settingsRepository) as T
+            return MainViewModel(
+                application,
+                drinkRepository,
+                settingsRepository,
+                healthConnectManager
+            ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

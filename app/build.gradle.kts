@@ -76,4 +76,7 @@ dependencies {
 
     // Lifecycle
     implementation(libs.lifecycle.viewmodel.compose)
+
+    // Health Connect
+    implementation(libs.health.connect.client)
 }
